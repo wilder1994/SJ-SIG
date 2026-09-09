@@ -10,10 +10,15 @@
         @php [$kind, $start] = explode('|', $key); @endphp
         <p style="margin:14px 0 6px;font-weight:500">{{ $kind }} · {{ $start }}</p>
         <table class="data">
-            <thead><tr><th>Puesto</th><th>Cantidad</th></tr></thead>
+            <thead><tr><th>Puesto</th><th>Modalidad</th><th>Unidades</th><th>Prestados</th></tr></thead>
             <tbody>
             @foreach($group as $row)
-                <tr><td>{{ $row->post->name }}</td><td>{{ $row->quantity }}</td></tr>
+                <tr>
+                    <td>{{ $row->post->site?->name }} · {{ $row->post->name }}</td>
+                    <td>{{ $row->post->shift_hours?->label() ?? '—' }}</td>
+                    <td>{{ $row->post->guard_slots }}</td>
+                    <td>{{ $row->quantity }}</td>
+                </tr>
             @endforeach
             </tbody>
         </table>

@@ -58,4 +58,29 @@ final class PlatformAccessTest extends TestCase
             ->assertSee('Solo consulta')
             ->assertDontSee('name="email"');
     }
+
+    public function test_supervisor_sees_own_sites_and_cannot_create_structure(): void
+    {
+        $this->seed();
+        $supervisorA = User::query()->where('email', 'supervisor.a@sj-sig.test')->firstOrFail();
+        $supervisorB = User::query()->where('email', 'supervisor.b@sj-sig.test')->firstOrFail();
+
+        $this->actingAs($supervisorA)
+            ->get('/instalaciones')
+            ->assertOk()
+            ->assertSee('Planta 1')
+            ->assertSee('Portería')
+            ->assertSee('3 vigilantes')
+            ->assertDontSee('name="code"');
+
+        $this->actingAs($supervisorA)
+            ->post('/instalaciones', ['code' => 'X1', 'name' => 'Hack'])
+            ->assertForbidden();
+
+        $this->actingAs($supervisorB)
+            ->get('/instalaciones')
+            ->assertOk()
+            ->assertSee('Planta 1')
+            ->assertDontSee('Ana Vigilante');
+    }
 }

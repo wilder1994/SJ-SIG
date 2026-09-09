@@ -69,9 +69,14 @@ Pendiente: texto exacto del Anexo 7.4 (casillas, plazos, URL, evidencias) y rest
 Empresa SJ (dueña de SJ-SIG)
   └── Cliente (tenant)     ← un universo; el supervisor se asigna aquí
         └── Contrato 1:1 (interno, no se elige en pantalla)
-              └── Instalaciones / puestos (siguiente fase)
+              └── Instalación (planta, bodega, sede)
+                    └── Puesto (portería, ronda…)
+                          · modalidad: 8 / 12 / 24 h
+                          · unidades: N vigilantes (cupo, no el listado de personas)
               └── Personal, documentos, parafiscales, electrónica, servicios, novedades
 ```
+
+**Instalaciones y puestos** definen la capacidad contratada. El módulo **Personal** sigue siendo quién es cada vigilante; la asignación persona ↔ puesto queda para un paso posterior.
 
 El usuario de **Operaciones** (jefe, coordinador, analista, patrulla) también va amarrado a **un cliente** y aparece en **Equipo SJ** para que la entidad vea quién de SJ está asignado. Gestión humana (`interno`) no sale en esa lista.
 
@@ -163,7 +168,7 @@ Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** p
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
-| 2 | Clientes + usuarios de plataforma | Hecho (alta de universo y cuentas). Instalaciones/puestos pendientes |
+| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
 | 3 | Personal + import Excel + gestor documental | Hecho: ficha vs carpeta (ver §6) |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
@@ -181,6 +186,7 @@ Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** p
 | Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` | — | — |
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
+| Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
 | Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
@@ -202,7 +208,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -211,7 +217,22 @@ Local aislado:
 - LAN por IP (puerto **8086**, no usa `:80` de Armory): `http://172.16.16.70:8086` o `http://192.168.18.14:8086`
 - Vhost Apache: `00-aae-sj-sig.conf` (`Listen 8086` + `sj-sig.test` en 80/443). Recargar Apache en Laragon.
 - Base de datos propia: `sj_sig`
-- Demo: clave `Sig2026!` — `admin@sj-sig.test`, `interno@sj-sig.test`, `ops.a@sj-sig.test`, `supervisor.a@sj-sig.test` vs `supervisor.b@sj-sig.test`. Tras este corte: `php artisan migrate:fresh --seed`.
+- Tras pull con instalaciones: `php artisan migrate` (crea `sites` y capacidad en `posts`). Demo completo: `php artisan migrate:fresh --seed`.
+- Si `php` no está en PATH (Laragon): `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
+
+### Usuarios y claves de prueba (demo local)
+
+Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
+
+| Correo | Rol | Cliente | Para qué |
+|--------|-----|---------|----------|
+| `admin@sj-sig.test` | Administración | Todos | Usuarios y clientes |
+| `interno@sj-sig.test` | Usuario interno | Todos | Carga Excel/PDF, instalaciones |
+| `ops.a@sj-sig.test` | Operaciones | Alcaldía A | Sale en Equipo SJ (A) |
+| `ops.b@sj-sig.test` | Operaciones | Entidad B | Sale en Equipo SJ (B) |
+| `tecnico@sj-sig.test` | Técnico | Alcaldía A | Solo electrónica |
+| `supervisor.a@sj-sig.test` | Supervisor de cliente | Alcaldía A | Universo A |
+| `supervisor.b@sj-sig.test` | Supervisor de cliente | Entidad B | Universo B |
 
 ---
 
@@ -245,3 +266,4 @@ Local aislado:
 | 2026-09-08 | Alta unitaria, carga PDF (HV, certificados, afiliaciones, cursos, parafiscales) y visor in-app. |
 | 2026-09-08 | Separación Personal (ficha HR) vs Documentos (carpeta por vigilante). Cursos y PDF viven en Documentos. |
 | 2026-09-08 | Módulos Clientes y Usuarios. Rol `interno` (todos los clientes) y `operaciones` (un cliente, listado Equipo SJ). Perfil de solo lectura. Clave con ojito y cambio en primer ingreso. |
+| 2026-09-08 | Instalaciones → puestos con modalidad (8/12/24 h) y unidades (cupo de vigilantes). Tabla demo de usuarios/claves en el informe. |

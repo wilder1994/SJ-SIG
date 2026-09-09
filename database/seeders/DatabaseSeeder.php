@@ -16,6 +16,7 @@ use App\Models\Person;
 use App\Models\PersonDocument;
 use App\Models\Post;
 use App\Models\ServiceDelivery;
+use App\Models\Site;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Support\Files\SimplePdf;
@@ -120,16 +121,34 @@ final class DatabaseSeeder extends Seeder
             'ends_on' => '2026-12-31',
         ]);
 
+        $planta = Site::query()->create([
+            'tenant_id' => $tenant->id,
+            'contract_id' => $contract->id,
+            'code' => 'P1',
+            'name' => 'Planta 1',
+            'city' => $city,
+        ]);
+        $bodega = Site::query()->create([
+            'tenant_id' => $tenant->id,
+            'contract_id' => $contract->id,
+            'code' => 'B1',
+            'name' => 'Bodega 1',
+            'city' => $city,
+        ]);
+
         $posts = collect([
-            ['code' => 'P01', 'name' => 'Palacio municipal'],
-            ['code' => 'P02', 'name' => 'Sede de archivo'],
-            ['code' => 'P03', 'name' => 'Centro de convenciones'],
+            ['site' => $planta, 'code' => 'POR', 'name' => 'Portería', 'hours' => 12, 'slots' => 3],
+            ['site' => $planta, 'code' => 'RON', 'name' => 'Ronda', 'hours' => 8, 'slots' => 1],
+            ['site' => $bodega, 'code' => 'PK', 'name' => 'Parqueadero', 'hours' => 24, 'slots' => 2],
         ])->map(fn (array $row) => Post::query()->create([
             'tenant_id' => $tenant->id,
             'contract_id' => $contract->id,
+            'site_id' => $row['site']->id,
             'code' => $row['code'],
             'name' => $row['name'],
             'city' => $city,
+            'shift_hours' => $row['hours'],
+            'guard_slots' => $row['slots'],
         ]));
 
         $month = CarbonImmutable::now()->startOfMonth();

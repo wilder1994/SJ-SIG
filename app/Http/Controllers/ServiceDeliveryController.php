@@ -16,7 +16,7 @@ final class ServiceDeliveryController extends Controller
 
         $rows = ServiceDelivery::query()
             ->where('contract_id', $contract->id)
-            ->with('post')
+            ->with('post.site')
             ->orderByDesc('period_starts_on')
             ->orderBy('post_id')
             ->get()

@@ -42,14 +42,14 @@ final class BuildContractDashboardService
             ->where('contract_id', $contract->id)
             ->where('period_kind', 'month')
             ->whereDate('period_starts_on', $monthStart)
-            ->with('post')
+            ->with('post.site')
             ->get();
 
-        $posts = Post::query()->where('contract_id', $contract->id)->orderBy('name')->get();
+        $posts = Post::query()->where('contract_id', $contract->id)->with('site')->orderBy('name')->get();
         $servedIds = $services->pluck('post_id')->all();
 
         $servicesByPost = $posts->map(fn (Post $post) => [
-            'post' => $post->name,
+            'post' => trim(($post->site?->name ? $post->site->name.' · ' : '').$post->name),
             'quantity' => (int) ($services->firstWhere('post_id', $post->id)?->quantity ?? 0),
         ])->all();
 

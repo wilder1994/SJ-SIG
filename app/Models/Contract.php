@@ -27,6 +27,11 @@ class Contract extends Model
         return $this->belongsTo(Tenant::class);
     }
 
+    public function sites(): HasMany
+    {
+        return $this->hasMany(Site::class)->orderBy('name');
+    }
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class);

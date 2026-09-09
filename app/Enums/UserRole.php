@@ -85,6 +85,11 @@ enum UserRole: string
         ], true);
     }
 
+    public function canManageStructure(): bool
+    {
+        return $this->canUploadEvidence();
+    }
+
     public function canAccessHr(): bool
     {
         return $this !== self::TecnicoElectronica;
@@ -113,6 +118,7 @@ enum UserRole: string
             ['key' => 'all_clients', 'label' => 'Todos los clientes', 'on' => $this->seesAllClients()],
             ['key' => 'users', 'label' => 'Usuarios', 'on' => $this->canManageUsers()],
             ['key' => 'clients', 'label' => 'Alta de clientes', 'on' => $this->canManageClients()],
+            ['key' => 'structure', 'label' => 'Instalaciones y puestos', 'on' => $this->canManageStructure()],
             ['key' => 'upload', 'label' => 'Carga PDF / Excel', 'on' => $this->canUploadEvidence()],
             ['key' => 'docs', 'label' => 'Ver / descargar documentos', 'on' => $this->canAccessHr()],
             ['key' => 'novelties', 'label' => 'Novedades', 'on' => $this->canMutateNovelties()],

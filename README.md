@@ -16,16 +16,17 @@ Puerto **8086** (no usa el `:80`; Armory permanece en `172.16.16.70`).
 
 Clave demo: `Sig2026!`
 
-| Correo | Rol |
-|--------|-----|
-| `admin@sj-sig.test` | Administración (usuarios y clientes) |
-| `interno@sj-sig.test` | Usuario interno (todos los clientes, carga documental) |
-| `ops.a@sj-sig.test` | Operaciones cliente A (visible para la entidad) |
-| `tecnico@sj-sig.test` | Técnico (solo electrónica, cliente A) |
-| `supervisor.a@sj-sig.test` | Supervisor de cliente A |
-| `supervisor.b@sj-sig.test` | Supervisor de cliente B |
+| Correo | Rol | Cliente |
+|--------|-----|---------|
+| `admin@sj-sig.test` | Administración | Todos |
+| `interno@sj-sig.test` | Usuario interno | Todos |
+| `ops.a@sj-sig.test` | Operaciones | Alcaldía A |
+| `ops.b@sj-sig.test` | Operaciones | Entidad B |
+| `tecnico@sj-sig.test` | Técnico | Alcaldía A |
+| `supervisor.a@sj-sig.test` | Supervisor de cliente | Alcaldía A |
+| `supervisor.b@sj-sig.test` | Supervisor de cliente | Entidad B |
 
-El usuario **no edita su perfil**. Cambios: solo Administración. Primer ingreso de un alta nueva: cambio obligatorio de clave. Ojito para ver la clave en login y formularios. El correo `operador.a@sj-sig.test` quedó reemplazado por `interno@sj-sig.test`.
+El usuario **no edita su perfil**. Cambios: solo Administración. Primer ingreso de un alta nueva: cambio obligatorio de clave. Ojito para ver la clave en login y formularios.
 
 ## Stack
 
@@ -38,11 +39,11 @@ UI: mismo layout gerencial; paleta institucional del logo SJ (navy, azure, cian,
 1. Copiar `.env.example` → `.env` y `php artisan key:generate`.
 2. Crear base `sj_sig` (utf8mb4). Credenciales locales típicas: `root` / vacío.
 3. `composer install` y `npm install && npm run build`.
-4. `php artisan migrate:fresh --seed`.
+4. `php artisan migrate:fresh --seed` (o solo `php artisan migrate` si ya hay datos y solo faltan tablas nuevas como `sites`).
 5. Copiar [`docs/apache/00-aae-sj-sig.conf`](docs/apache/00-aae-sj-sig.conf) a `C:\laragon\etc\apache2\sites-enabled\` (no reemplaza otros vhosts) y recargar Apache.
 6. Alternativa: `php artisan serve --host=0.0.0.0 --port=8086`.
 
-Firewall: permitir TCP **8086** en red privada si otros PCs no entran.
+Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Laragon, si `php` no está en el PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan migrate`.
 
 ## Personal vs Documentos
 
@@ -52,6 +53,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran.
 | **Documentos** | Carpeta por vigilante. Visor in-app | Interno / admin cargan; entidad y operaciones consultan |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
+| **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
 Flujo: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.

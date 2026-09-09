@@ -16,6 +16,7 @@
                 <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') && ! request()->routeIs('users.photo') ? 'is-on' : '' }}">Usuarios</a>
             @endif
             @if(auth()->user()->role->canAccessHr())
+                <a href="{{ route('sites.index') }}" class="{{ request()->routeIs('sites.*') ? 'is-on' : '' }}">Instalaciones</a>
                 <a href="{{ route('people.index') }}" class="{{ request()->routeIs('people.*') ? 'is-on' : '' }}">Personal</a>
                 <a href="{{ route('documents.index') }}" class="{{ request()->routeIs('documents.*') ? 'is-on' : '' }}">Documentos</a>
                 <a href="{{ route('parafiscals.index') }}" class="{{ request()->routeIs('parafiscals.*') ? 'is-on' : '' }}">Parafiscales</a>

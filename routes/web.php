@@ -12,6 +12,7 @@ use App\Http\Controllers\ParafiscalController;
 use App\Http\Controllers\PersonController;
 use App\Http\Controllers\PlatformUserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ServiceDeliveryController;
 use Illuminate\Support\Facades\Route;
 
@@ -46,6 +47,9 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/usuarios/{user}/editar', [PlatformUserController::class, 'edit'])->name('users.edit');
     Route::put('/usuarios/{user}', [PlatformUserController::class, 'update'])->name('users.update');
     Route::get('/equipo', OperationsTeamController::class)->name('operations.index');
+    Route::get('/instalaciones', [SiteController::class, 'index'])->name('sites.index');
+    Route::post('/instalaciones', [SiteController::class, 'store'])->name('sites.store');
+    Route::post('/instalaciones/{site}/puestos', [SiteController::class, 'storePost'])->name('sites.posts.store');
     Route::get('/personal', [PersonController::class, 'index'])->name('people.index');
     Route::get('/personal/nuevo', [PersonController::class, 'create'])->name('people.create');
     Route::post('/personal', [PersonController::class, 'store'])->name('people.store');
