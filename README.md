@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin sube un PDF → ve miniaturas y marca páginas sueltas (1, 7, 11…) → tipo + nombre `Tipo_cedula_Apellidos_Nombres` → un archivo por tipo. Consulta: **Listado** + ojo (preview). Tipos “si aplica” se pueden marcar **No aplica**. Botón **Escanear** pendiente. Tras pull: `php artisan migrate`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin sube un PDF → **Indexar lote** (izquierda: tipo/lista; derecha: miniaturas; scroll por panel) → marca páginas sueltas (1, 7, 11…) → un archivo por tipo. Consulta: **Listado** + ojo (preview). Tipos “si aplica” se pueden marcar **No aplica**. Botón **Escanear** pendiente. Tras pull: `php artisan migrate` y `npm run build`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

@@ -230,6 +230,7 @@ document.addEventListener('click', (event) => {
         wrap.querySelector('[data-slice-name]').textContent = nameInput.value;
         wrap.querySelector('[data-remove-slice]')?.addEventListener('click', () => wrap.remove());
         rows.appendChild(wrap);
+        wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         selected.clear();
         lastPage = null;
         paintSelection();

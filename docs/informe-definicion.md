@@ -168,7 +168,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
 - En modo carga: botón **Subir** (PDF ya digitalizado, preferible multipágina).
-- Pantalla **Indexar lote**: miniaturas del PDF; seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
+- Pantalla **Indexar lote**: dos columnas. Izquierda: contexto Historia Laboral + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF (scroll si no caben). Seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
 
@@ -213,7 +213,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` (miniaturas PDF.js, selección no consecutiva).
+- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` (dos columnas, miniaturas PDF.js, selección no consecutiva, scroll por panel).
 - Sin cambiar el aislamiento por cliente/contrato.
 
 ---
@@ -224,7 +224,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral: miniaturas + páginas no consecutivas. Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral: indexador en dos columnas (lista + miniaturas). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
@@ -328,3 +328,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Especificación Historia Laboral (gestión documental indexada): catálogo de 26 tipos, Subir PDF + indexar, Listado con preview. Escáner dejado pendiente. |
 | 2026-09-09 | Implementación Historia Laboral: lote PDF, indexador por rangos, checklist Listado + preview, N/A. Escáner sigue pendiente. |
 | 2026-09-09 | Indexador: páginas no consecutivas + miniaturas PDF.js. |
+| 2026-09-09 | Indexar lote: columna izquierda (contexto + lista) y derecha (páginas) con scroll independiente. |
