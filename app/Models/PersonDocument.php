@@ -11,12 +11,15 @@ use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Support\Personnel\IndexedFolder;
 use App\Support\Tenancy\BelongsToTenant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PersonDocument extends Model
 {
     use BelongsToTenant;
+
+    public const DELETE_GRACE_HOURS = 12;
 
     protected $fillable = [
         'tenant_id',
@@ -80,5 +83,21 @@ class PersonDocument extends Model
     public function hasFile(): bool
     {
         return ! $this->not_applicable && is_string($this->disk_path) && $this->disk_path !== '';
+    }
+
+    public function scopeWithPdf(Builder $query): void
+    {
+        $query->where('not_applicable', false)
+            ->whereNotNull('disk_path')
+            ->where('disk_path', '!=', '');
+    }
+
+    public function canDelete(): bool
+    {
+        if (! $this->hasFile() || $this->created_at === null) {
+            return false;
+        }
+
+        return $this->created_at->gt(now()->subHours(self::DELETE_GRACE_HOURS));
     }
 }

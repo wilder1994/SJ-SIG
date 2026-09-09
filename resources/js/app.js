@@ -59,8 +59,75 @@ document.addEventListener('keydown', (event) => {
         upload.hidden = true;
         return;
     }
+    const folderLayer = document.getElementById('folder-layer');
+    if (folderLayer?.classList.contains('is-open')) {
+        folderLayer.classList.remove('is-open');
+        folderLayer.hidden = true;
+        return;
+    }
     closePreview();
 });
+
+(function initFolderModal() {
+    const layer = document.getElementById('folder-layer');
+    if (!layer) {
+        return;
+    }
+
+    const panes = [...layer.querySelectorAll('[data-folder-pane]')];
+
+    const close = () => {
+        layer.hidden = true;
+        layer.classList.remove('is-open');
+        panes.forEach((pane) => {
+            pane.hidden = true;
+        });
+    };
+
+    const open = (id) => {
+        panes.forEach((pane) => {
+            pane.hidden = pane.getAttribute('data-folder-pane') !== id;
+        });
+        layer.hidden = false;
+        layer.classList.add('is-open');
+        const pane = panes.find((item) => item.getAttribute('data-folder-pane') === id);
+        const search = pane?.querySelector('[data-folder-search]');
+        if (search instanceof HTMLInputElement) {
+            search.value = '';
+            search.dispatchEvent(new Event('input'));
+            search.focus();
+        }
+    };
+
+    document.addEventListener('click', (event) => {
+        const trigger = event.target.closest('[data-open-folder]');
+        if (trigger) {
+            event.preventDefault();
+            open(trigger.getAttribute('data-open-folder') || '');
+        }
+        if (event.target.closest('[data-close-folder]')) {
+            event.preventDefault();
+            close();
+        }
+    });
+    layer.addEventListener('click', (event) => {
+        if (event.target === layer) {
+            close();
+        }
+    });
+    layer.addEventListener('input', (event) => {
+        const search = event.target;
+        if (!(search instanceof HTMLInputElement) || !search.hasAttribute('data-folder-search')) {
+            return;
+        }
+        const pane = search.closest('[data-folder-pane]');
+        const needle = search.value.trim().toLowerCase();
+        pane?.querySelectorAll('[data-doc-search]').forEach((row) => {
+            const hay = row.getAttribute('data-doc-search') || '';
+            row.hidden = needle !== '' && !hay.includes(needle);
+        });
+    });
+})();
 
 (function initUploadModal() {
     const layer = document.getElementById('upload-layer');
@@ -145,6 +212,9 @@ photoInput?.addEventListener('change', () => {
     photoPreview.hidden = false;
     if (photoIcon) {
         photoIcon.hidden = true;
+    }
+    if (photoInput.hasAttribute('data-photo-autosubmit')) {
+        photoInput.form?.requestSubmit();
     }
 });
 

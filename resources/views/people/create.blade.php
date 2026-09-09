@@ -7,8 +7,15 @@
     <p class="kicker">Alta unitaria</p>
     <h2 class="display" style="font-size:26px;margin:4px 0 8px">Nuevo empleado</h2>
     <p class="muted">Para un ingreso puntual. HV, certificados y afiliaciones PDF se cargan después en Documentos → Ver carpeta → Cargar documentos.</p>
-    <form method="post" action="{{ route('people.store') }}" class="form-grid" style="margin-top:16px">
+    <form method="post" action="{{ route('people.store') }}" class="form-grid" style="margin-top:16px" enctype="multipart/form-data">
         @csrf
+        <div class="span-2 avatar-picker">
+            @include('people._avatar', ['person' => null, 'canEdit' => true])
+            <div>
+                <p class="kicker">Foto</p>
+                <p class="muted">JPG, PNG o WebP, máximo 2 MB. Clic en el círculo o en la cámara.</p>
+            </div>
+        </div>
         <label class="field">Tipo documento
             <select name="document_type" required>
                 @foreach(['C','CE','N','TI','PT'] as $type)

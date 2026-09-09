@@ -4,11 +4,14 @@ namespace App\Services\Personnel;
 
 use App\Models\Contract;
 use App\Models\Person;
+use Illuminate\Http\UploadedFile;
 
 final class CreatePersonService
 {
+    public function __construct(private readonly StorePersonPhotoService $photos) {}
+
     /** @param  array<string, mixed>  $payload */
-    public function execute(Contract $contract, array $payload): Person
+    public function execute(Contract $contract, array $payload, ?UploadedFile $photo = null): Person
     {
         $person = Person::query()->updateOrCreate(
             [
@@ -27,6 +30,10 @@ final class CreatePersonService
                 'post_id' => $payload['post_id'] ?? null,
             ],
         ]);
+
+        if ($photo !== null) {
+            $this->photos->execute($person, $photo);
+        }
 
         return $person;
     }

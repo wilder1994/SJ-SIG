@@ -34,13 +34,14 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertOk()
             ->assertSee('Historia Laboral')
             ->assertSee('Contratación')
-            ->assertSee('Listado')
-            ->assertSee('1/26 indexados')
-            ->assertSee('0/9 indexados')
-            ->assertSee('1/3 indexados')
-            ->assertSee('1/25 indexados')
-            ->assertSee('3/8 indexados')
-            ->assertSee('0/20 soportes')
+            ->assertSee('Volver')
+            ->assertSee('1 de 26')
+            ->assertSee('0 de 9')
+            ->assertSee('1 de 3')
+            ->assertSee('1 de 25')
+            ->assertSee('3 de 8')
+            ->assertSee('0 de 20')
+            ->assertSee('Abrir')
             ->assertDontSee('Cargar documentos')
             ->assertDontSee('Indexar lote')
             ->assertDontSee('No aplica');
@@ -48,6 +49,25 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/lote')
             ->assertForbidden();
+    }
+
+    public function test_documents_index_shows_folder_and_pdf_counts(): void
+    {
+        $this->seed();
+        $supervisor = User::query()->where('email', 'supervisor.a@sj-sig.test')->firstOrFail();
+
+        $this->actingAs($supervisor)
+            ->get('/documentos')
+            ->assertOk()
+            ->assertSee('Cédula')
+            ->assertSee('Carpetas')
+            ->assertSee('Documentos')
+            ->assertSee('Acciones')
+            ->assertSee('11440001')
+            ->assertSee('Ana Vigilante A')
+            ->assertSee('4/6')
+            ->assertSee('Ver carpeta')
+            ->assertDontSee('>Archivos<', false);
     }
 
     public function test_internal_user_can_index_non_contiguous_pages(): void
@@ -92,7 +112,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('2/26 indexados');
+            ->assertSee('2 de 26');
     }
 
     public function test_internal_user_can_index_mixed_folders_from_one_pdf(): void
@@ -124,8 +144,8 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('2/26 indexados')
-            ->assertSee('1/9 indexados');
+            ->assertSee('2 de 26')
+            ->assertSee('1 de 9');
     }
 
     public function test_internal_user_can_index_contracting_pages(): void
@@ -151,7 +171,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('1/9 indexados');
+            ->assertSee('1 de 9');
     }
 
     public function test_internal_user_can_index_affiliation_pages(): void
@@ -171,7 +191,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('4/8 indexados');
+            ->assertSee('4 de 8');
     }
 
     public function test_internal_user_can_index_certificate_pages(): void
@@ -191,7 +211,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('2/3 indexados');
+            ->assertSee('2 de 3');
     }
 
     public function test_internal_user_can_index_supervised_course_pages(): void
@@ -228,7 +248,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('2/25 indexados');
+            ->assertSee('2 de 25');
     }
 
     public function test_internal_user_can_index_other_support_pages(): void
@@ -264,7 +284,7 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('1/20 soportes')
+            ->assertSee('1 de 20')
             ->assertSee($tipo);
     }
 
@@ -287,6 +307,76 @@ final class LaborHistoryIndexingTest extends TestCase
             ])
             ->assertRedirect('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertSessionHasErrors('slices.0.tipo');
+    }
+
+    public function test_internal_user_can_delete_pdf_within_twelve_hours(): void
+    {
+        [$interno, $person] = $this->internoAndPerson();
+        $type = LaborHistoryDocumentType::FotocopiaCedula;
+        $batch = $this->uploadLote($interno, $person, ['Cedula'], 'borrar.pdf');
+        $this->postIndexed($interno, $person, $batch, DocumentFolder::HojaVida, $type->value, $type->suggestedName($person));
+
+        $document = PersonDocument::query()
+            ->where('person_id', $person->id)
+            ->where('document_type', $type->value)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->from('/documentos/carpeta/'.$person->id)
+            ->delete('/documentos/archivo/'.$document->id)
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseMissing('person_documents', ['id' => $document->id]);
+    }
+
+    public function test_internal_user_cannot_delete_pdf_after_twelve_hours(): void
+    {
+        [$interno, $person] = $this->internoAndPerson();
+        $document = PersonDocument::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::HojaVida)
+            ->whereNotNull('disk_path')
+            ->firstOrFail();
+        $document->forceFill(['created_at' => now()->subHours(13)])->save();
+
+        $this->actingAs($interno)
+            ->from('/documentos/carpeta/'.$person->id)
+            ->delete('/documentos/archivo/'.$document->id)
+            ->assertRedirect('/documentos/carpeta/'.$person->id)
+            ->assertSessionHasErrors('document');
+
+        $this->assertDatabaseHas('person_documents', ['id' => $document->id]);
+    }
+
+    public function test_supervisor_cannot_delete_pdf(): void
+    {
+        $this->seed();
+        $supervisor = User::query()->where('email', 'supervisor.a@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $document = PersonDocument::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::HojaVida)
+            ->whereNotNull('disk_path')
+            ->firstOrFail();
+
+        $this->actingAs($supervisor)
+            ->delete('/documentos/archivo/'.$document->id)
+            ->assertForbidden();
+    }
+
+    public function test_internal_user_can_update_person_photo(): void
+    {
+        [$interno, $person] = $this->internoAndPerson();
+        $photo = UploadedFile::fake()->image('vigilante.jpg', 240, 240);
+
+        $this->actingAs($interno)
+            ->from('/documentos/carpeta/'.$person->id)
+            ->post('/personal/'.$person->id.'/foto', ['photo' => $photo])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $person->refresh();
+        $this->assertNotNull($person->photo_path);
+        $this->assertTrue(is_file(storage_path('app/'.$person->photo_path)));
     }
 
     /** @return array{0: User, 1: Person} */

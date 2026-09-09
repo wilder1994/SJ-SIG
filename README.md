@@ -15,7 +15,12 @@ Puerto **8086** en **todas las interfaces** (`0.0.0.0`). Cualquier equipo de la 
 | Este PC (hosts) | http://sj-sig.test (Apache 80/443) |
 | Misma red Wi‑Fi / Ethernet | `http://IP:8086/ingreso` (ver IP abajo) |
 
-**IPs actuales del servidor** (cambian si el router asigna otra): consultar con `ipconfig` o el script de firewall. Wi‑Fi actual (`sjsp.net`): `http://172.16.23.47:8086/ingreso`.
+**IPs actuales del servidor** (cambian si el router asigna otra): consultar con `ipconfig` o el script de firewall.
+
+| Adaptador | URL |
+|-----------|-----|
+| Ethernet (cable, red actual) | `http://172.16.16.70:8086/ingreso` |
+| Wi‑Fi `sjsp.net` (si está activo) | `http://172.16.23.47:8086/ingreso` |
 
 **Firewall (obligatorio para otros PCs):** PowerShell **como Administrador**:
 
@@ -61,16 +66,16 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
-| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) indexadas | Interno/admin: modal PDF + indexar (carpeta/tipo por corte); entidad consulta Listado/ojo |
+| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha y foto circular | Interno / admin |
+| **Documentos** | Listado por vigilante (cédula, carpetas con PDF, documentos reales). En la carpeta: foto, tarjetas y modal. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) | Interno/admin: foto + modal PDF + indexar; entidad consulta tarjetas/modal |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
-Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
+Flujo actual: Personal → Nuevo empleado (foto circular) → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.
 
-**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad), **Afiliaciones** (8; las hace la empresa) y **Otros** (tipo libre, máx. 20; el nombre no puede cruzar con las otras listas): **un solo PDF** (`POST /documentos/carpeta/{person}/lote`). Interno/admin: **Cargar documentos** (modal) → Indexar lote → por cada grupo de páginas elige **carpeta** y **tipo** (un PDF puede alimentar varias carpetas). Consulta: **Listado** + ojo. N/A visible para quien carga, sin modo extra. Tope: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate` (`document_batches.folder` nullable) y `npm run build`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad), **Afiliaciones** (8; las hace la empresa) y **Otros** (tipo libre, máx. 20; el nombre no puede cruzar con las otras listas): **un solo PDF** (`POST /documentos/carpeta/{person}/lote`). Interno/admin: **Cargar documentos** (modal) → Indexar lote → por cada grupo de páginas elige **carpeta** y **tipo**. En la carpeta: foto circular, tarjetas (`N de total`), **Volver**, modal con buscador (Ver/Descargar; Eliminar 12 h). N/A en pendientes. Tope: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate` (`people.photo_path`) y `npm run build`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

@@ -55,6 +55,8 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::post('/personal', [PersonController::class, 'store'])->name('people.store');
     Route::post('/personal/importar', [PersonController::class, 'import'])->name('people.import');
     Route::get('/personal/{person}', [PersonController::class, 'show'])->name('people.show');
+    Route::get('/personal/{person}/foto', [PersonController::class, 'photo'])->name('people.photo');
+    Route::post('/personal/{person}/foto', [PersonController::class, 'storePhoto'])->name('people.photo.store');
     Route::get('/documentos', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documentos/carpeta/{person}', [DocumentController::class, 'folder'])->name('documents.folder');
     Route::post('/documentos/carpeta/{person}', [DocumentController::class, 'store'])->name('documents.store');
@@ -69,6 +71,7 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::post('/documentos/carpeta/{person}/cursos-na', [DocumentController::class, 'markCourseNa'])->name('documents.courses.na');
     Route::get('/documentos/archivo/{document}/ver', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documentos/archivo/{document}/descarga', [DocumentController::class, 'download'])->name('documents.download');
+    Route::delete('/documentos/archivo/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
     Route::get('/parafiscales', [ParafiscalController::class, 'index'])->name('parafiscals.index');
     Route::post('/parafiscales', [ParafiscalController::class, 'store'])->name('parafiscals.store');
     Route::get('/parafiscales/{parafiscal}/ver', [ParafiscalController::class, 'preview'])->name('parafiscals.preview');

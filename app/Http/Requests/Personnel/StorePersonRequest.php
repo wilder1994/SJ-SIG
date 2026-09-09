@@ -27,12 +27,13 @@ final class StorePersonRequest extends FormRequest
             'arl_name' => ['nullable', 'string', 'max:120'],
             'job_code' => ['nullable', 'string', 'max:64'],
             'hired_on' => ['nullable', 'date'],
+            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 
     /** @return array<string, mixed> */
     public function personPayload(): array
     {
-        return $this->safe()->except([]);
+        return $this->safe()->except(['photo']);
     }
 }

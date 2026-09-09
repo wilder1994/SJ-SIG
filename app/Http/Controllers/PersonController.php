@@ -3,14 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Personnel\ImportPersonnelRequest;
+use App\Http\Requests\Personnel\StorePersonPhotoRequest;
 use App\Http\Requests\Personnel\StorePersonRequest;
 use App\Models\Contract;
+use App\Models\Person;
 use App\Repositories\Contracts\PersonRepositoryInterface;
 use App\Services\Personnel\CreatePersonService;
 use App\Services\Personnel\ImportPersonnelWorkbookService;
+use App\Services\Personnel\StorePersonPhotoService;
+use App\Support\Files\StoredFileResponder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PersonController extends Controller
 {
@@ -18,6 +23,7 @@ final class PersonController extends Controller
         private readonly PersonRepositoryInterface $people,
         private readonly ImportPersonnelWorkbookService $importer,
         private readonly CreatePersonService $creator,
+        private readonly StorePersonPhotoService $photos,
     ) {}
 
     public function index(Request $request): View
@@ -41,9 +47,33 @@ final class PersonController extends Controller
     {
         /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
-        $person = $this->creator->execute($contract, $request->validated());
+        $person = $this->creator->execute($contract, $request->personPayload(), $request->file('photo'));
 
         return redirect()->route('people.show', $person)->with('status', 'Empleado registrado. Los PDF se cargan en Documentos → carpeta.');
+    }
+
+    public function photo(Request $request, int $person): StreamedResponse
+    {
+        $model = $this->personInContract($request, $person);
+        abort_if(! is_string($model->photo_path) || $model->photo_path === '', 404);
+
+        $mime = match (strtolower(pathinfo($model->photo_path, PATHINFO_EXTENSION))) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            default => 'image/jpeg',
+        };
+
+        return StoredFileResponder::stream($model->photo_path, basename($model->photo_path), $mime, true);
+    }
+
+    public function storePhoto(StorePersonPhotoRequest $request, int $person): RedirectResponse
+    {
+        $model = $this->personInContract($request, $person);
+        $file = $request->file('photo');
+        abort_if($file === null, 422);
+        $this->photos->execute($model, $file);
+
+        return back()->with('status', 'Foto del vigilante actualizada.');
     }
 
     public function show(Request $request, int $person): View
@@ -66,5 +96,15 @@ final class PersonController extends Controller
         $result = $this->importer->execute($contract, $path);
 
         return back()->with('import', $result);
+    }
+
+    private function personInContract(Request $request, int $person): Person
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $model = $this->people->findInContract($contract->id, $person);
+        abort_if($model === null, 404);
+
+        return $model;
     }
 }

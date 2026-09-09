@@ -147,7 +147,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** abre un modal con la tarjeta PDF (arrastrar, pegar o seleccionar) y luego carpeta + tipo en el indexador. **No aplica** queda en cada Listado para quien puede cargar.
+**Documentos** es una fila por empleado (no por archivo). Columnas: cédula, nombre, **carpetas** (con al menos un PDF / 6), **documentos** (PDFs reales, sin N/A) y acciones (icono carpeta → expediente). En la carpeta: foto circular del vigilante, tarjetas de carpeta con conteo `N de total` y modal (buscador, Ver/Descargar; Eliminar solo 12 h). Interno/admin: **Cargar documentos** (modal PDF) y cámara para la foto. **No aplica** en pendientes del modal.
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
@@ -170,7 +170,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Catálogo fijo de tipos de documento (lista operativa SJ).
 - **Cargar documentos** abre un modal centrado con **una** tarjeta PDF → **Indexar**. En el lote se elige carpeta y tipo por grupo de páginas (un PDF puede alimentar varias carpetas).
 - Pantalla **Indexar lote**: dos columnas. Izquierda: carpeta + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF. Seleccionar páginas sueltas o un tramo con Shift+clic → carpeta → tipo → **Guardar** genera **un archivo por corte**.
-- En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
+- En la carpeta: foto circular (cámara para interno/admin), **Volver** al listado, tarjetas por carpeta (conteo `N de total`) y **Abrir** → modal con buscador, PDFs (Ver / Descargar; Eliminar solo 12 h) y pendientes (N/A).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
 
 #### Fuera de v1 (pendiente de decisión)
@@ -214,7 +214,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo; modal de carga con una dropzone PDF; N/A en Listado) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas).
+- UI: `documents/folder` (foto + tarjetas + modal de carpeta; carga PDF en modal; N/A en pendientes) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas). Foto: `people.photo_path`, `StorePersonPhotoService`. Borrado: `DeletePersonDocumentService` (12 h).
 - Rutas de lote: `POST/GET /documentos/carpeta/{person}/lote`, `GET .../lote/{batch}/ver`, `POST .../lote/{batch}`. El PDF vive en `.../lote/batches/{uuid}.pdf`. `document_batches.folder` queda null; la carpeta va en cada corte (`slices.*.folder`).
 - Sin cambiar el aislamiento por cliente/contrato.
 
@@ -233,7 +233,7 @@ Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios: 
 | 7 | Afiliación seguro de vida | `afiliacion_seguro_vida` |
 | 8 | Afiliación o carta de desistimiento de seguro exequial | `afiliacion_exequial` |
 
-Mismo lote único: en el indexador se elige carpeta Afiliaciones y el tipo. Consulta: **Listado** + ojo. N/A en el Listado para interno/admin. Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
+Mismo lote único: en el indexador se elige carpeta Afiliaciones y el tipo. Consulta: tarjeta + modal. N/A en pendientes para interno/admin. Enum `AffiliationDocumentType`. Demo: 3 de 8 (EPS, pensiones y caja).
 
 ### 6.3 Certificados — gestión documental (hecho)
 
@@ -300,7 +300,7 @@ Orden en UI: Historia Laboral → **Contratación** → Certificados → Cursos 
 
 ### 6.6 Otros — gestión documental (hecho)
 
-Mismo indexador (PDF, páginas sueltas). No hay catálogo fijo: el usuario **digita el tipo**. El nombre del archivo se arma con el slug del tipo + cédula + nombre (editable). Tope **20** soportes por trabajador. Consulta: **Listado** `N/20 soportes` + ojo. Sin N/A. Demo: 0/20 (no se siembra).
+Mismo indexador (PDF, páginas sueltas). No hay catálogo fijo: el usuario **digita el tipo**. El nombre del archivo se arma con el slug del tipo + cédula + nombre (editable). Tope **20** soportes por trabajador. Consulta: tarjeta `N de 20` + modal. Sin N/A. Demo: 0 de 20 (no se siembra).
 
 Si el tipo o el nombre coincide con un documento de Historia Laboral, Contratación, Certificados, Cursos o Afiliaciones, no se guarda: debe cambiar el tipo o cargarlo en esa carpeta. Se indexa en el lote único (`/lote`) eligiendo carpeta Otros. Enum `OtherDocumentType` (`otro_soporte`, repetible). Helper `OtherSupportNamer`.
 
@@ -330,8 +330,8 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
-| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
-| Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
+| Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta; `DELETE .../archivo/{id}` (12 h) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
 Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
@@ -357,7 +357,7 @@ UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Segurid
 
 Local aislado:
 
-- LAN: puerto **8086** en `0.0.0.0` (cualquier IP del servidor). URL: `http://<IP>:8086/ingreso`. Ejemplo Wi‑Fi `sjsp.net`: `http://172.16.23.47:8086/ingreso`. No usa `:80` si Armory u otro vhost lo ocupa.
+- LAN: puerto **8086** en `0.0.0.0` (cualquier IP del servidor). URL: `http://<IP>:8086/ingreso`. Cable (Ethernet): `http://172.16.16.70:8086/ingreso`. Wi‑Fi `sjsp.net` (si está activo): `http://172.16.23.47:8086/ingreso`. No usa `:80` si Armory u otro vhost lo ocupa.
 - Tope de carga: **50 MB** por archivo (PDF del indexador; PDF/JPG/PNG en parafiscales). PHP Laragon ya admite más.
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
@@ -426,6 +426,9 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Cursos y capacitación indexados (catálogo Super 25 + otro). HV queda en 26. EPS/AFP/cesantías de HV (empleado) ya no se cruzan con Afiliaciones (empresa). |
 | 2026-09-09 | Contratación indexada: 9 tipos obligatorios (contrato, ética, inducción, carné, carta). Demo 0/9. No se cruza con HV. |
 | 2026-09-09 | Tope de carga 50 MB. LAN de demo: Wi‑Fi `sjsp.net` `http://172.16.23.47:8086/ingreso`. |
+| 2026-09-09 | LAN por cable: Ethernet `http://172.16.16.70:8086/ingreso`. |
+| 2026-09-09 | Foto circular del vigilante. Carpetas en tarjetas + modal (buscador). Conteo `N de total`. Eliminar PDF solo 12 h. Botón Volver (antes Listado). |
 | 2026-09-09 | Otros indexados: tipo libre, máx. 20 por trabajador. Bloquea nombres que cruzan con las otras carpetas. |
 | 2026-09-09 | Un solo PDF para indexar (`/lote`): carpeta + tipo por corte. `document_batches.folder` nullable. Las 6 tarjetas de carga quedan en una. |
 | 2026-09-09 | Cargar documentos en modal centrado. N/A visible para interno/admin sin `?cargar=1`. |
+| 2026-09-09 | Listado Documentos: cédula, nombre, carpetas con PDF, documentos reales y acción Ver carpeta. |

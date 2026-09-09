@@ -11,17 +11,34 @@
         <button class="btn" type="submit">Buscar</button>
     </form>
     <table class="data">
-        <thead><tr><th>Identificación</th><th>Nombre</th><th>Archivos</th><th></th></tr></thead>
+        <thead>
+            <tr>
+                <th>Cédula</th>
+                <th>Nombre</th>
+                <th>Carpetas</th>
+                <th>Documentos</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
         <tbody>
         @forelse($people as $person)
             <tr>
-                <td>{{ $person->document_type }} {{ $person->document_number }}</td>
+                <td><span class="muted">{{ $person->document_type }}</span> {{ $person->document_number }}</td>
                 <td>{{ $person->full_name }}</td>
+                <td>{{ (int) $person->folders_count }}/{{ $folderTotal }}</td>
                 <td>{{ $person->documents_count }}</td>
-                <td><a href="{{ route('documents.folder', $person) }}">Ver carpeta</a></td>
+                <td>
+                    <a class="folder-link" href="{{ route('documents.folder', $person) }}">
+                        <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                            <path fill="#e8b923" d="M3 7.25A1.75 1.75 0 0 1 4.75 5.5H9l1.7 1.7h8.55A1.75 1.75 0 0 1 21 8.95v9.3A1.75 1.75 0 0 1 19.25 20H4.75A1.75 1.75 0 0 1 3 18.25v-11Z"/>
+                            <path fill="#f5c84a" d="M3 9.5h18v8.75A1.75 1.75 0 0 1 19.25 20H4.75A1.75 1.75 0 0 1 3 18.25V9.5Z"/>
+                        </svg>
+                        Ver carpeta
+                    </a>
+                </td>
             </tr>
         @empty
-            <tr><td colspan="4" class="muted">Sin personal en este contrato.</td></tr>
+            <tr><td colspan="5" class="muted">Sin personal en este contrato.</td></tr>
         @endforelse
         </tbody>
     </table>

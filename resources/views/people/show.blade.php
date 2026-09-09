@@ -3,10 +3,20 @@
 @section('title', $person->full_name.' · SJ-SIG')
 
 @section('content')
-<article class="card" style="margin-bottom:12px">
-    <p class="kicker">{{ $person->document_type }} {{ $person->document_number }}</p>
-    <h2 class="display" style="font-size:30px;margin:4px 0 8px">{{ $person->full_name }}</h2>
-    <p class="muted">{{ $person->isActive() ? 'Activo' : 'Retiro '.$person->left_on?->format('d/m/Y') }} · cargo {{ $person->job_code ?? '—' }}</p>
+<article class="card person-hero" style="margin-bottom:12px">
+    <div class="person-hero-id">
+        @include('people._avatar', [
+            'person' => $person,
+            'canEdit' => auth()->user()->role->canUploadEvidence(),
+            'autosubmit' => true,
+            'action' => route('people.photo.store', $person),
+        ])
+        <div>
+            <p class="kicker">{{ $person->document_type }} {{ $person->document_number }}</p>
+            <h2 class="display" style="font-size:30px;margin:4px 0 8px">{{ $person->full_name }}</h2>
+            <p class="muted">{{ $person->isActive() ? 'Activo' : 'Retiro '.$person->left_on?->format('d/m/Y') }} · cargo {{ $person->job_code ?? '—' }}</p>
+        </div>
+    </div>
 </article>
 <section class="split">
     <article class="card">

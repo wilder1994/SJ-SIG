@@ -118,6 +118,12 @@ final class FolderChecklist
         ];
     }
 
+    /** @param array{total: int, loaded: int} $summary */
+    public static function countLabel(array $summary): string
+    {
+        return $summary['loaded'].' de '.$summary['total'];
+    }
+
     /**
      * @param  \Illuminate\Support\Collection<int, PersonDocument>  $files
      */

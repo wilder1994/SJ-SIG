@@ -16,6 +16,7 @@ class Person extends Model
         'document_type',
         'document_number',
         'full_name',
+        'photo_path',
         'birth_date',
         'document_issue_place',
         'document_issued_on',
@@ -59,6 +60,17 @@ class Person extends Model
     public function isActive(): bool
     {
         return $this->left_on === null;
+    }
+
+    public function initials(): string
+    {
+        $parts = preg_split('/\s+/', trim($this->full_name)) ?: [];
+        $letters = '';
+        foreach (array_slice($parts, 0, 2) as $part) {
+            $letters .= mb_strtoupper(mb_substr($part, 0, 1));
+        }
+
+        return $letters !== '' ? $letters : 'SJ';
     }
 
     public function contracts(): BelongsToMany

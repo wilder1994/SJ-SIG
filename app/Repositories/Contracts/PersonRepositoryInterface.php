@@ -7,7 +7,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface PersonRepositoryInterface
 {
-    public function paginateForContract(int $contractId, ?string $search = null): LengthAwarePaginator;
+    public function paginateForContract(int $contractId, ?string $search = null, bool $documentStats = false): LengthAwarePaginator;
 
     public function findInContract(int $contractId, int $personId): ?Person;
 }

@@ -13,6 +13,7 @@ use App\Models\DocumentBatch;
 use App\Models\Person;
 use App\Models\PersonDocument;
 use App\Repositories\Contracts\PersonRepositoryInterface;
+use App\Services\Personnel\DeletePersonDocumentService;
 use App\Services\Personnel\IndexLaborHistoryPdfService;
 use App\Services\Personnel\MarkLaborHistoryNotApplicableService;
 use App\Services\Personnel\StoreLaborHistoryBatchService;
@@ -34,6 +35,7 @@ final class DocumentController extends Controller
         private readonly StoreLaborHistoryBatchService $historyBatch,
         private readonly IndexLaborHistoryPdfService $historyIndex,
         private readonly MarkLaborHistoryNotApplicableService $historyNa,
+        private readonly DeletePersonDocumentService $deleteDocument,
     ) {}
 
     public function index(Request $request): View
@@ -43,7 +45,8 @@ final class DocumentController extends Controller
         $q = $request->string('q')->toString();
 
         return view('documents.index', [
-            'people' => $this->people->paginateForContract($contract->id, $q !== '' ? $q : null),
+            'people' => $this->people->paginateForContract($contract->id, $q !== '' ? $q : null, true),
+            'folderTotal' => count(DocumentFolder::cases()),
             'q' => $q,
         ]);
     }
@@ -161,6 +164,20 @@ final class DocumentController extends Controller
         abort_unless($file->hasFile(), 404);
 
         return StoredFileResponder::stream($file->disk_path, $file->label(), (string) $file->mime, false);
+    }
+
+    public function destroy(Request $request, int $document): RedirectResponse
+    {
+        abort_unless(auth()->user()?->role->canUploadEvidence() ?? false, 403);
+        $file = $this->locate($request, $document);
+
+        try {
+            $this->deleteDocument->execute($file);
+        } catch (\RuntimeException $exception) {
+            return back()->withErrors(['document' => $exception->getMessage()]);
+        }
+
+        return back()->with('status', 'Documento eliminado. Puede volver a indexarlo.');
     }
 
     private function showIndexer(Request $request, int $person, int $batch): View
