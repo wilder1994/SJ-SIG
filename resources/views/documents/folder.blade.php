@@ -21,42 +21,81 @@
 </article>
 
 @if($cargar)
-<article class="card" style="margin-bottom:12px">
+<section class="upload-deck" style="margin-bottom:12px">
     <p class="kicker">Carga (usuario interno)</p>
-    <p class="muted" style="margin-bottom:12px">Historia Laboral se indexa por tipo. El resto de carpetas se sube archivo a archivo. El escáner queda pendiente.</p>
-
-    <p style="margin:0 0 4px;font-weight:500">Historia Laboral</p>
-    <p class="muted">Suba un PDF (una o varias páginas). En el siguiente paso asigna tipo y nombre a cada rango.</p>
-    <form method="post" action="{{ route('documents.history.batch', $person) }}" enctype="multipart/form-data" style="display:flex;gap:8px;margin:8px 0 16px;align-items:center">
-        @csrf
-        <input type="file" name="file" accept=".pdf" required style="flex:1">
-        <button class="btn" type="submit">Subir PDF</button>
-        <button class="btn ghost" type="button" disabled title="Pendiente: decisión de agente de escáner">Escanear</button>
-    </form>
-
-    <form method="post" action="{{ route('documents.courses.store', $person) }}" class="form-grid" style="margin-bottom:16px">
-        @csrf
-        <label class="field">Curso · título
-            <input name="title" required>
-        </label>
-        <label class="field">Fecha
-            <input type="date" name="taken_on" required>
-        </label>
-        <div class="span-2"><button class="btn" type="submit">Registrar curso</button></div>
-    </form>
-
-    @foreach(\App\Enums\DocumentFolder::cases() as $folder)
-        @continue($folder === \App\Enums\DocumentFolder::HojaVida)
-        <p style="margin:10px 0 4px;font-weight:500">{{ $folder->label() }}</p>
-        <p class="muted">{{ $folder->hint() }}</p>
-        <form method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" style="display:flex;gap:8px;margin:6px 0 12px;align-items:center">
+    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Historia Laboral pasa al indexador. El escáner queda pendiente.</p>
+    <div class="drop-grid">
+        <form class="drop-card" method="post" action="{{ route('documents.history.batch', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,application/pdf" data-max="20480">
             @csrf
-            <input type="hidden" name="folder" value="{{ $folder->value }}">
-            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="flex:1">
-            <button class="btn" type="submit">Subir</button>
+            <p class="drop-card-title">Historia Laboral</p>
+            <p class="muted drop-card-hint">{{ \App\Enums\DocumentFolder::HojaVida->hint() }}</p>
+            <input class="drop-input" type="file" name="file" accept=".pdf" required>
+            <div class="drop-empty">
+                <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
+                <p>Arrastre, pegue o seleccione un PDF</p>
+            </div>
+            <div class="drop-ready" hidden>
+                <div class="drop-file">
+                    <span class="drop-icon drop-icon-pdf" data-file-icon aria-hidden="true">PDF</span>
+                    <div>
+                        <p data-file-name></p>
+                        <p class="muted" data-file-size></p>
+                    </div>
+                </div>
+            </div>
+            <p class="muted drop-error" hidden></p>
+            <div class="drop-actions">
+                <button class="btn ghost" type="button" data-drop-clear hidden>Quitar</button>
+                <button class="btn" type="submit" disabled>Indexar</button>
+                <button class="btn ghost" type="button" disabled title="Pendiente: decisión de agente de escáner">Escanear</button>
+            </div>
         </form>
-    @endforeach
-</article>
+
+        @foreach(\App\Enums\DocumentFolder::cases() as $folder)
+            @continue($folder === \App\Enums\DocumentFolder::HojaVida)
+            <form class="drop-card" method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" data-max="12288">
+                @csrf
+                <input type="hidden" name="folder" value="{{ $folder->value }}">
+                <p class="drop-card-title">{{ $folder->label() }}</p>
+                <p class="muted drop-card-hint">{{ $folder->hint() }}</p>
+                <input class="drop-input" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+                <div class="drop-empty">
+                    <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
+                    <p>Arrastre, pegue o seleccione</p>
+                </div>
+                <div class="drop-ready" hidden>
+                    <div class="drop-file">
+                        <span class="drop-icon drop-icon-pdf" data-file-icon aria-hidden="true">PDF</span>
+                        <div>
+                            <p data-file-name></p>
+                            <p class="muted" data-file-size></p>
+                        </div>
+                    </div>
+                </div>
+                <p class="muted drop-error" hidden></p>
+                <div class="drop-actions">
+                    <button class="btn ghost" type="button" data-drop-clear hidden>Quitar</button>
+                    <button class="btn" type="submit" disabled>Subir</button>
+                </div>
+            </form>
+        @endforeach
+
+        <form class="drop-card drop-card-form" method="post" action="{{ route('documents.courses.store', $person) }}">
+            @csrf
+            <p class="drop-card-title">Cursos</p>
+            <p class="muted drop-card-hint">Registre título y fecha. El acta PDF se carga en la tarjeta Cursos.</p>
+            <label class="field">Título
+                <input name="title" required>
+            </label>
+            <label class="field">Fecha
+                <input type="date" name="taken_on" required>
+            </label>
+            <div class="drop-actions">
+                <button class="btn" type="submit">Registrar curso</button>
+            </div>
+        </form>
+    </div>
+</section>
 @endif
 
 <section class="split">

@@ -106,6 +106,153 @@ photoInput?.addEventListener('change', () => {
     }
 });
 
+(function initDropzones() {
+    const cards = [...document.querySelectorAll('[data-dropzone]')];
+    if (!cards.length) {
+        return;
+    }
+
+    let hovered = null;
+
+    function accepts(file, accept) {
+        const tokens = (accept || '').split(',').map((item) => item.trim().toLowerCase()).filter(Boolean);
+        const name = file.name.toLowerCase();
+        const type = (file.type || '').toLowerCase();
+        return tokens.some((token) => {
+            if (token.startsWith('.')) {
+                return name.endsWith(token);
+            }
+            return type === token;
+        });
+    }
+
+    function formatSize(bytes) {
+        if (bytes < 1024) {
+            return bytes + ' B';
+        }
+        if (bytes < 1024 * 1024) {
+            return (bytes / 1024).toFixed(1) + ' KB';
+        }
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function paint(card, file) {
+        const empty = card.querySelector('.drop-empty');
+        const ready = card.querySelector('.drop-ready');
+        const error = card.querySelector('.drop-error');
+        const clear = card.querySelector('[data-drop-clear]');
+        const submit = card.querySelector('button[type="submit"]');
+        const name = card.querySelector('[data-file-name]');
+        const size = card.querySelector('[data-file-size]');
+        const icon = card.querySelector('[data-file-icon]');
+        const isImage = !!file && (/^image\//.test(file.type || '') || /\.(jpe?g|png)$/i.test(file.name));
+        if (empty) {
+            empty.hidden = !!file;
+        }
+        if (ready) {
+            ready.hidden = !file;
+        }
+        if (clear) {
+            clear.hidden = !file;
+        }
+        if (submit) {
+            submit.disabled = !file;
+        }
+        if (error) {
+            error.hidden = true;
+            error.textContent = '';
+        }
+        card.classList.toggle('is-ready', !!file);
+        if (file && name) {
+            name.textContent = file.name;
+        }
+        if (file && size) {
+            size.textContent = formatSize(file.size);
+        }
+        if (icon) {
+            icon.textContent = isImage ? 'IMG' : 'PDF';
+            icon.classList.toggle('drop-icon-img', isImage);
+            icon.classList.toggle('drop-icon-pdf', !isImage);
+        }
+    }
+
+    function showError(card, message) {
+        const error = card.querySelector('.drop-error');
+        if (error) {
+            error.hidden = false;
+            error.textContent = message;
+        }
+    }
+
+    function assign(card, file) {
+        const input = card.querySelector('.drop-input');
+        const accept = card.getAttribute('data-accept') || '';
+        const maxKb = Number(card.getAttribute('data-max') || 0);
+        if (!file || !input) {
+            return;
+        }
+        if (!accepts(file, accept)) {
+            showError(card, 'Este archivo no es válido para esta carpeta.');
+            return;
+        }
+        if (maxKb > 0 && file.size > maxKb * 1024) {
+            showError(card, 'El archivo supera el tamaño máximo.');
+            return;
+        }
+        const transfer = new DataTransfer();
+        transfer.items.add(file);
+        input.files = transfer.files;
+        paint(card, file);
+    }
+
+    function clearCard(card) {
+        const input = card.querySelector('.drop-input');
+        if (input) {
+            input.value = '';
+        }
+        paint(card, null);
+    }
+
+    cards.forEach((card) => {
+        const input = card.querySelector('.drop-input');
+        card.addEventListener('mouseenter', () => {
+            hovered = card;
+        });
+        card.addEventListener('click', (event) => {
+            if (event.target.closest('button, a, input, label, select, textarea')) {
+                return;
+            }
+            input?.click();
+        });
+        card.querySelector('.drop-empty')?.addEventListener('click', () => input?.click());
+        input?.addEventListener('change', () => assign(card, input.files?.[0]));
+        card.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            card.classList.add('is-over');
+        });
+        card.addEventListener('dragleave', () => card.classList.remove('is-over'));
+        card.addEventListener('drop', (event) => {
+            event.preventDefault();
+            card.classList.remove('is-over');
+            assign(card, event.dataTransfer?.files?.[0]);
+        });
+        card.querySelector('[data-drop-clear]')?.addEventListener('click', () => clearCard(card));
+        paint(card, null);
+    });
+
+    document.addEventListener('paste', (event) => {
+        const target = event.target;
+        if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+            return;
+        }
+        const file = event.clipboardData?.files?.[0];
+        if (file && hovered) {
+            event.preventDefault();
+            assign(hovered, file);
+        }
+    });
+})();
+
 document.addEventListener('click', (event) => {
     const toggle = event.target.closest('[data-toggle-panel]');
     if (!toggle) {

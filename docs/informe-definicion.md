@@ -147,11 +147,11 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`).
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`) con tarjetas por carpeta (arrastrar, pegar o seleccionar; se ve icono PDF/IMG y el nombre antes de confirmar).
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
-| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Subir PDF → miniaturas → páginas sueltas (p. ej. 1, 7, 11). Escáner pendiente |
+| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Tarjeta PDF (arrastrar/pegar/seleccionar) → Indexar lote (miniaturas, páginas sueltas). Escáner pendiente |
 | Certificados | Aptitud, armas, escolta, policía, etc. | Documentos → carpeta |
 | Cursos | Título y fecha + acta/diploma PDF | Documentos → carpeta |
 | Afiliaciones | Certificado PDF de EPS, pensión y caja | Documentos → carpeta (nombres siguen en la ficha) |
@@ -167,7 +167,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
-- En modo carga: botón **Subir** (PDF ya digitalizado, preferible multipágina).
+- En modo carga: tarjetas por carpeta (arrastrar, pegar o seleccionar). Historia Laboral: solo PDF → **Indexar**. El resto: PDF/JPG/PNG → **Subir**. Cursos (título + fecha) es tarjeta aparte.
 - Pantalla **Indexar lote**: dos columnas. Izquierda: contexto Historia Laboral + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF (scroll si no caben). Seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
@@ -213,7 +213,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` (dos columnas, miniaturas PDF.js, selección no consecutiva, scroll por panel).
+- UI: `documents/folder` (consulta Listado + ojo; carga en tarjetas dropzone) + `documents/index-batch` (dos columnas, miniaturas PDF.js, selección no consecutiva, scroll por panel).
 - Sin cambiar el aislamiento por cliente/contrato.
 
 ---
@@ -224,7 +224,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral: indexador en dos columnas (lista + miniaturas). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Carga por tarjetas (arrastrar/pegar) + indexador dos columnas. Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
@@ -329,3 +329,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Implementación Historia Laboral: lote PDF, indexador por rangos, checklist Listado + preview, N/A. Escáner sigue pendiente. |
 | 2026-09-09 | Indexador: páginas no consecutivas + miniaturas PDF.js. |
 | 2026-09-09 | Indexar lote: columna izquierda (contexto + lista) y derecha (páginas) con scroll independiente. |
+| 2026-09-09 | Carga interna: tarjetas por carpeta (arrastrar, pegar o seleccionar; icono + nombre antes de confirmar). |

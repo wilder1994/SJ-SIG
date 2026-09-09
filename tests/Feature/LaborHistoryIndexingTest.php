@@ -49,8 +49,10 @@ final class LaborHistoryIndexingTest extends TestCase
         $file = new UploadedFile($path, 'lote.pdf', 'application/pdf', null, true);
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId.'&cargar=1')
+            ->assertOk()
+            ->assertSee('Arrastre, pegue o seleccione')
+            ->assertSee('Indexar');
 
         $this->actingAs($interno)
             ->post('/documentos/carpeta/'.$person->id.'/historia', ['file' => $file])

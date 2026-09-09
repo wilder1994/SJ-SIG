@@ -205,6 +205,88 @@ input[type="search"]:focus,
 
 .form-grid .span-2 { grid-column: 1 / -1; }
 
+.upload-deck { margin-bottom: 4px; }
+
+.drop-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.drop-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    background: #fff;
+    min-height: 220px;
+}
+
+.drop-card.is-over {
+    border-color: var(--brass);
+    background: rgba(28, 122, 230, 0.06);
+}
+
+.drop-card.is-ready { border-style: solid; border-color: var(--brass); }
+
+.drop-card-title { margin: 0; font-weight: 600; }
+.drop-card-hint { margin: 0; font-size: 12px; }
+
+.drop-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.drop-empty, .drop-ready { flex: 1; }
+
+.drop-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-align: center;
+    cursor: pointer;
+    color: var(--ink-soft);
+    border-radius: 8px;
+    background: var(--paper-2);
+    padding: 16px 8px;
+}
+
+.drop-file {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    background: var(--paper-2);
+}
+
+.drop-file p { margin: 0; word-break: break-word; }
+
+.drop-icon {
+    flex: 0 0 auto;
+    width: 40px;
+    height: 44px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.drop-icon-pdf { background: #f3d6d6; color: #8c1f1f; }
+.drop-icon-img { background: #d6e6f3; color: #0b3d91; }
+
+.drop-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+.drop-error { color: var(--bad); margin: 0; }
+
 .file-row {
     display: flex;
     align-items: center;
@@ -535,7 +617,7 @@ input[type="search"]:focus,
 .dot.bad { background: var(--bad); }
 
 @media (max-width: 960px) {
-    .shell, .login-wrap, .grid-kpi, .split, .form-grid, .index-workspace { grid-template-columns: 1fr; }
+    .shell, .login-wrap, .grid-kpi, .split, .form-grid, .index-workspace, .drop-grid { grid-template-columns: 1fr; }
     .index-workspace { height: auto; }
     .index-meta, .index-composer, .index-pages { max-height: 70vh; }
     .rail { flex-direction: row; align-items: center; justify-content: space-between; }
