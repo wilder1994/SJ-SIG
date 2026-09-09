@@ -4,6 +4,7 @@ namespace App\Services\Personnel;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
@@ -20,7 +21,7 @@ use setasign\Fpdi\Fpdi;
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string}>  $slices
+     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -38,7 +39,7 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string} $slice */
+    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
         $pages = $this->normalizePages($slice['pages'], $batch->page_count);

@@ -4,6 +4,7 @@ namespace App\Support\Personnel;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\DocumentRequirement;
@@ -13,7 +14,7 @@ use App\Models\PersonDocument;
 
 final class FolderChecklist
 {
-    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, document: ?PersonDocument, status: string}> */
+    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType, document: ?PersonDocument, status: string}> */
     public static function for(Person $person, DocumentFolder $folder): array
     {
         $files = $person->documents
@@ -94,7 +95,7 @@ final class FolderChecklist
      */
     private static function legacyMatch(
         DocumentFolder $folder,
-        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType $type,
+        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType $type,
         $files,
     ): ?PersonDocument {
         if ($folder === DocumentFolder::HojaVida && $type === LaborHistoryDocumentType::HojaVida) {

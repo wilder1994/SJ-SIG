@@ -16,7 +16,7 @@ final class StoreParafiscalRequest extends FormRequest
     {
         return [
             'period' => ['required', 'date_format:Y-m'],
-            'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:12288'],
+            'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:51200'],
         ];
     }
 }

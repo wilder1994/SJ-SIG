@@ -4,6 +4,7 @@ namespace App\Support\Personnel;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
@@ -16,11 +17,12 @@ final class IndexedFolder
         return $folder->isIndexed();
     }
 
-    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType> */
+    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType> */
     public static function types(DocumentFolder $folder): array
     {
         return match ($folder) {
             DocumentFolder::HojaVida => LaborHistoryDocumentType::cases(),
+            DocumentFolder::Contratacion => ContractingDocumentType::cases(),
             DocumentFolder::Afiliaciones => AffiliationDocumentType::cases(),
             DocumentFolder::Certificados => CertificateDocumentType::cases(),
             DocumentFolder::Cursos => CourseDocumentType::cases(),
@@ -28,10 +30,11 @@ final class IndexedFolder
         };
     }
 
-    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType
+    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType
     {
         $type = match ($folder) {
             DocumentFolder::HojaVida => LaborHistoryDocumentType::tryFrom($value),
+            DocumentFolder::Contratacion => ContractingDocumentType::tryFrom($value),
             DocumentFolder::Afiliaciones => AffiliationDocumentType::tryFrom($value),
             DocumentFolder::Certificados => CertificateDocumentType::tryFrom($value),
             DocumentFolder::Cursos => CourseDocumentType::tryFrom($value),

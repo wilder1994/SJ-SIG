@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
@@ -30,8 +31,10 @@ final class LaborHistoryIndexingTest extends TestCase
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
             ->assertSee('Historia Laboral')
+            ->assertSee('Contratación')
             ->assertSee('Listado')
             ->assertSee('1/26 indexados')
+            ->assertSee('0/9 indexados')
             ->assertSee('1/3 indexados')
             ->assertSee('1/25 indexados')
             ->assertSee('3/8 indexados')
@@ -39,6 +42,10 @@ final class LaborHistoryIndexingTest extends TestCase
 
         $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/historia')
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
+            ->post('/documentos/carpeta/'.$person->id.'/contratacion')
             ->assertForbidden();
 
         $this->actingAs($supervisor)
@@ -117,6 +124,61 @@ final class LaborHistoryIndexingTest extends TestCase
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
             ->assertSee('2/26 indexados');
+    }
+
+    public function test_internal_user_can_index_contracting_pages(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $type = ContractingDocumentType::ContratoTrabajo;
+        $name = $type->suggestedName($person);
+
+        $path = storage_path('framework/testing/contratacion-lote.pdf');
+        SimplePdf::writePages($path, ['Pagina contrato']);
+        $file = new UploadedFile($path, 'contratacion.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/contratacion', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Contratacion)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/contratacion/'.$batch->id)
+            ->assertOk()
+            ->assertSee('Contratación')
+            ->assertSee('contrato_trabajo');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/contratacion/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => $type->value,
+                    'display_name' => $name,
+                    'pages' => [1],
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseHas('person_documents', [
+            'person_id' => $person->id,
+            'folder' => DocumentFolder::Contratacion->value,
+            'document_type' => $type->value,
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('1/9 indexados')
+            ->assertSee('1/26 indexados');
     }
 
     public function test_internal_user_can_index_affiliation_pages(): void

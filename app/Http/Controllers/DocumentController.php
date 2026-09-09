@@ -51,7 +51,11 @@ final class DocumentController extends Controller
         $model = $this->personInContract($request, $person);
 
         $indexedChecklists = [];
-        foreach ([DocumentFolder::HojaVida, DocumentFolder::Certificados, DocumentFolder::Cursos, DocumentFolder::Afiliaciones] as $folder) {
+        foreach (DocumentFolder::cases() as $folder) {
+            if (! $folder->isIndexed()) {
+                continue;
+            }
+
             $indexedChecklists[] = [
                 'folder' => $folder,
                 'rows' => FolderChecklist::for($model, $folder),
@@ -144,6 +148,19 @@ final class DocumentController extends Controller
         return redirect()->route('documents.courses.index', ['person' => $model, 'batch' => $batch]);
     }
 
+    public function storeContractingBatch(StoreLaborHistoryBatchRequest $request, int $person): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $model = $this->personInContract($request, $person);
+        $file = $request->file('file');
+        abort_if($file === null, 422);
+
+        $batch = $this->historyBatch->execute($contract, $model, $file, DocumentFolder::Contratacion);
+
+        return redirect()->route('documents.contracting.index', ['person' => $model, 'batch' => $batch]);
+    }
+
     public function historyIndex(Request $request, int $person, int $batch): View
     {
         return $this->showIndexer($request, $person, $batch, DocumentFolder::HojaVida);
@@ -162,6 +179,11 @@ final class DocumentController extends Controller
     public function courseIndex(Request $request, int $person, int $batch): View
     {
         return $this->showIndexer($request, $person, $batch, DocumentFolder::Cursos);
+    }
+
+    public function contractingIndex(Request $request, int $person, int $batch): View
+    {
+        return $this->showIndexer($request, $person, $batch, DocumentFolder::Contratacion);
     }
 
     public function storeHistoryIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
@@ -184,6 +206,11 @@ final class DocumentController extends Controller
         return $this->persistIndex($request, $person, $batch, DocumentFolder::Cursos);
     }
 
+    public function storeContractingIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
+    {
+        return $this->persistIndex($request, $person, $batch, DocumentFolder::Contratacion);
+    }
+
     public function markHistoryNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
     {
         return $this->markIndexedNa($request, $person, DocumentFolder::HojaVida);
@@ -204,6 +231,11 @@ final class DocumentController extends Controller
         return $this->markIndexedNa($request, $person, DocumentFolder::Cursos);
     }
 
+    public function markContractingNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
+    {
+        return $this->markIndexedNa($request, $person, DocumentFolder::Contratacion);
+    }
+
     public function previewBatch(Request $request, int $person, int $batch): StreamedResponse
     {
         return $this->streamBatch($request, $person, $batch, DocumentFolder::HojaVida);
@@ -222,6 +254,11 @@ final class DocumentController extends Controller
     public function previewCourseBatch(Request $request, int $person, int $batch): StreamedResponse
     {
         return $this->streamBatch($request, $person, $batch, DocumentFolder::Cursos);
+    }
+
+    public function previewContractingBatch(Request $request, int $person, int $batch): StreamedResponse
+    {
+        return $this->streamBatch($request, $person, $batch, DocumentFolder::Contratacion);
     }
 
     public function preview(Request $request, int $document): StreamedResponse

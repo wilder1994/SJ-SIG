@@ -63,6 +63,11 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/documentos/carpeta/{person}/historia/{batch}/ver', [DocumentController::class, 'previewBatch'])->name('documents.history.preview');
     Route::post('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'storeHistoryIndex'])->name('documents.history.store');
     Route::post('/documentos/carpeta/{person}/historia-na', [DocumentController::class, 'markHistoryNa'])->name('documents.history.na');
+    Route::post('/documentos/carpeta/{person}/contratacion', [DocumentController::class, 'storeContractingBatch'])->name('documents.contracting.batch');
+    Route::get('/documentos/carpeta/{person}/contratacion/{batch}', [DocumentController::class, 'contractingIndex'])->name('documents.contracting.index');
+    Route::get('/documentos/carpeta/{person}/contratacion/{batch}/ver', [DocumentController::class, 'previewContractingBatch'])->name('documents.contracting.preview');
+    Route::post('/documentos/carpeta/{person}/contratacion/{batch}', [DocumentController::class, 'storeContractingIndex'])->name('documents.contracting.store');
+    Route::post('/documentos/carpeta/{person}/contratacion-na', [DocumentController::class, 'markContractingNa'])->name('documents.contracting.na');
     Route::post('/documentos/carpeta/{person}/afiliaciones', [DocumentController::class, 'storeAffiliationBatch'])->name('documents.affiliations.batch');
     Route::get('/documentos/carpeta/{person}/afiliaciones/{batch}', [DocumentController::class, 'affiliationIndex'])->name('documents.affiliations.index');
     Route::get('/documentos/carpeta/{person}/afiliaciones/{batch}/ver', [DocumentController::class, 'previewAffiliationBatch'])->name('documents.affiliations.preview');

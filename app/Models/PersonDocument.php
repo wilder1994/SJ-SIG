@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
@@ -55,7 +56,7 @@ class PersonDocument extends Model
         return $this->belongsTo(Person::class);
     }
 
-    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType|null
+    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|null
     {
         if (! is_string($this->document_type) || $this->document_type === '' || $this->folder === null) {
             return null;

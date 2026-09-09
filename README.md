@@ -15,7 +15,7 @@ Puerto **8086** en **todas las interfaces** (`0.0.0.0`). Cualquier equipo de la 
 | Este PC (hosts) | http://sj-sig.test (Apache 80/443) |
 | Misma red Wi‑Fi / Ethernet | `http://IP:8086/ingreso` (ver IP abajo) |
 
-**IPs actuales del servidor** (cambian si el router asigna otra): consultar con `ipconfig` o el script de firewall. Ejemplo reciente: Wi‑Fi `http://192.168.1.39:8086/ingreso`.
+**IPs actuales del servidor** (cambian si el router asigna otra): consultar con `ipconfig` o el script de firewall. Wi‑Fi actual (`sjsp.net`): `http://172.16.23.47:8086/ingreso`.
 
 **Firewall (obligatorio para otros PCs):** PowerShell **como Administrador**:
 
@@ -62,7 +62,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
 | **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. HV (26), Certificados (3), Cursos y capacitación (25+otro) y Afiliaciones (8) indexadas | Interno/admin: tarjetas + indexar; entidad consulta Listado/ojo |
+| **Documentos** | Carpeta por vigilante. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro) y Afiliaciones (8) indexadas | Interno/admin: tarjetas + indexar; entidad consulta Listado/ojo |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad) y **Afiliaciones** (8; las hace la empresa): mismo indexador. Interno/admin: **Cargar documentos** → tarjeta PDF → **Indexar lote**. Consulta: **Listado** + ojo. **Escanear** pendiente. Tras pull: `php artisan migrate` y `npm run build`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad) y **Afiliaciones** (8; las hace la empresa): mismo indexador. Interno/admin: **Cargar documentos** → tarjeta PDF → **Indexar lote**. Consulta: **Listado** + ojo. Tope de archivo: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate` y `npm run build`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

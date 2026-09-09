@@ -4,6 +4,7 @@ namespace App\Services\Personnel;
 
 use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
+use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
@@ -13,7 +14,7 @@ use App\Models\PersonDocument;
 
 final class MarkLaborHistoryNotApplicableService
 {
-    public function execute(Person $person, DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType $type): PersonDocument
+    public function execute(Person $person, DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType $type): PersonDocument
     {
         if ($type instanceof CourseDocumentType) {
             Course::query()

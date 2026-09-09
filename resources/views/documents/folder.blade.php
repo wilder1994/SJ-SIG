@@ -23,11 +23,11 @@
 @if($cargar)
 <section class="upload-deck" style="margin-bottom:12px">
     <p class="kicker">Carga (usuario interno)</p>
-    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Historia Laboral, Certificados, Cursos y capacitación y Afiliaciones pasan al indexador. El escáner queda pendiente.</p>
+    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Historia Laboral, Contratación, Certificados, Cursos y capacitación y Afiliaciones pasan al indexador. El escáner queda pendiente.</p>
     <div class="drop-grid">
         @foreach(\App\Enums\DocumentFolder::cases() as $folder)
             @continue(! $folder->isIndexed())
-            <form class="drop-card" method="post" action="{{ route($folder->batchRoute(), $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,application/pdf" data-max="20480">
+            <form class="drop-card" method="post" action="{{ route($folder->batchRoute(), $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,application/pdf" data-max="51200">
                 @csrf
                 <p class="drop-card-title">{{ $folder->label() }}</p>
                 <p class="muted drop-card-hint">{{ $folder->hint() }}</p>
@@ -58,7 +58,7 @@
 
         @foreach(\App\Enums\DocumentFolder::cases() as $folder)
             @continue($folder->isIndexed())
-            <form class="drop-card" method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" data-max="12288">
+            <form class="drop-card" method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" data-max="51200">
                 @csrf
                 <input type="hidden" name="folder" value="{{ $folder->value }}">
                 <p class="drop-card-title">{{ $folder->label() }}</p>

@@ -15,7 +15,7 @@ final class StoreLaborHistoryBatchRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'file' => ['required', 'file', 'mimes:pdf', 'max:20480'],
+            'file' => ['required', 'file', 'mimes:pdf', 'max:51200'],
         ];
     }
 }
