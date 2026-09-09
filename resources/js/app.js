@@ -50,10 +50,52 @@ layer?.addEventListener('click', (event) => {
     }
 });
 document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-        closePreview();
+    if (event.key !== 'Escape') {
+        return;
     }
+    const upload = document.getElementById('upload-layer');
+    if (upload?.classList.contains('is-open')) {
+        upload.classList.remove('is-open');
+        upload.hidden = true;
+        return;
+    }
+    closePreview();
 });
+
+(function initUploadModal() {
+    const layer = document.getElementById('upload-layer');
+    if (!layer) {
+        return;
+    }
+
+    const open = () => {
+        layer.hidden = false;
+        layer.classList.add('is-open');
+    };
+    const close = () => {
+        layer.hidden = true;
+        layer.classList.remove('is-open');
+    };
+
+    document.addEventListener('click', (event) => {
+        if (event.target.closest('[data-open-upload]')) {
+            event.preventDefault();
+            open();
+        }
+        if (event.target.closest('[data-close-upload]')) {
+            event.preventDefault();
+            close();
+        }
+    });
+    layer.addEventListener('click', (event) => {
+        if (event.target === layer) {
+            close();
+        }
+    });
+    if (layer.hasAttribute('data-open')) {
+        open();
+    }
+})();
 
 const roleMetaNode = document.getElementById('role-meta');
 const roleSelect = document.getElementById('role-select');
@@ -246,9 +288,14 @@ photoInput?.addEventListener('change', () => {
             return;
         }
         const file = event.clipboardData?.files?.[0];
-        if (file && hovered) {
+        const uploadLayer = document.getElementById('upload-layer');
+        const modalCard = uploadLayer?.classList.contains('is-open')
+            ? uploadLayer.querySelector('[data-dropzone]')
+            : null;
+        const dropTarget = modalCard || hovered;
+        if (file && dropTarget) {
             event.preventDefault();
-            assign(hovered, file);
+            assign(dropTarget, file);
         }
     });
 })();

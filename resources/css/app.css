@@ -549,6 +549,20 @@ input[type="search"]:focus,
 
 .preview-layer.is-open { display: flex !important; }
 
+.upload-frame {
+    width: min(480px, 100%);
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 18px 48px rgba(11, 18, 32, 0.28);
+}
+
+.upload-body { padding: 16px; }
+
+.upload-frame .drop-card { min-height: 200px; }
+
 .preview-frame {
     width: min(920px, 100%);
     height: min(86vh, 840px);

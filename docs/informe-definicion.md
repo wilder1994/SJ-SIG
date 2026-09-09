@@ -147,16 +147,16 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`) con una tarjeta PDF (arrastrar, pegar o seleccionar) y luego carpeta + tipo en el indexador.
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** abre un modal con la tarjeta PDF (arrastrar, pegar o seleccionar) y luego carpeta + tipo en el indexador. **No aplica** queda en cada Listado para quien puede cargar.
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
-| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1; 26 tipos). EPS/AFP/cesantías = certificados que **trae el empleado** | Tarjeta PDF → Indexar lote. Escáner pendiente |
-| **Contratación** | Vinculación laboral (ver §6.5; 9 tipos, todos obligatorios) | Tarjeta PDF → Indexar lote |
-| **Certificados** | Exámenes ocupacionales (ver §6.3; 3 tipos) | Tarjeta PDF → Indexar lote |
-| **Cursos y capacitación** | Catálogo Superintendencia (25) + otro (ver §6.4). Fecha y entidad obligatorias | Tarjeta PDF → Indexar lote |
-| Afiliaciones | Afiliaciones que **hace la empresa** al contratar (8 tipos) | Tarjeta PDF → Indexar lote. Nombres EPS/AFP/caja/ARL siguen en la ficha |
-| **Otros** | Soportes sueltos (ver §6.6; tipo libre, máx. 20) | Tarjeta PDF → Indexar lote |
+| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1; 26 tipos). EPS/AFP/cesantías = certificados que **trae el empleado** | Modal PDF → Indexar lote. Escáner pendiente |
+| **Contratación** | Vinculación laboral (ver §6.5; 9 tipos, todos obligatorios) | Modal PDF → Indexar lote |
+| **Certificados** | Exámenes ocupacionales (ver §6.3; 3 tipos) | Modal PDF → Indexar lote |
+| **Cursos y capacitación** | Catálogo Superintendencia (25) + otro (ver §6.4). Fecha y entidad obligatorias | Modal PDF → Indexar lote |
+| Afiliaciones | Afiliaciones que **hace la empresa** al contratar (8 tipos) | Modal PDF → Indexar lote. Nombres EPS/AFP/caja/ARL siguen en la ficha |
+| **Otros** | Soportes sueltos (ver §6.6; tipo libre, máx. 20) | Modal PDF → Indexar lote |
 
 Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
 
@@ -168,7 +168,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
-- En modo carga: **una** tarjeta PDF → **Indexar**. En el lote se elige carpeta y tipo por grupo de páginas (un PDF puede alimentar varias carpetas).
+- **Cargar documentos** abre un modal centrado con **una** tarjeta PDF → **Indexar**. En el lote se elige carpeta y tipo por grupo de páginas (un PDF puede alimentar varias carpetas).
 - Pantalla **Indexar lote**: dos columnas. Izquierda: carpeta + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF. Seleccionar páginas sueltas o un tramo con Shift+clic → carpeta → tipo → **Guardar** genera **un archivo por corte**.
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
@@ -214,7 +214,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo; una dropzone PDF) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas).
+- UI: `documents/folder` (consulta Listado + ojo; modal de carga con una dropzone PDF; N/A en Listado) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas).
 - Rutas de lote: `POST/GET /documentos/carpeta/{person}/lote`, `GET .../lote/{batch}/ver`, `POST .../lote/{batch}`. El PDF vive en `.../lote/batches/{uuid}.pdf`. `document_batches.folder` queda null; la carpeta va en cada corte (`slices.*.folder`).
 - Sin cambiar el aislamiento por cliente/contrato.
 
@@ -233,7 +233,7 @@ Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios: 
 | 7 | Afiliación seguro de vida | `afiliacion_seguro_vida` |
 | 8 | Afiliación o carta de desistimiento de seguro exequial | `afiliacion_exequial` |
 
-Mismo lote único: en el indexador se elige carpeta Afiliaciones y el tipo. Consulta: **Listado** + ojo. N/A disponible en modo carga. Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
+Mismo lote único: en el indexador se elige carpeta Afiliaciones y el tipo. Consulta: **Listado** + ojo. N/A en el Listado para interno/admin. Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
 
 ### 6.3 Certificados — gestión documental (hecho)
 
@@ -428,3 +428,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Tope de carga 50 MB. LAN de demo: Wi‑Fi `sjsp.net` `http://172.16.23.47:8086/ingreso`. |
 | 2026-09-09 | Otros indexados: tipo libre, máx. 20 por trabajador. Bloquea nombres que cruzan con las otras carpetas. |
 | 2026-09-09 | Un solo PDF para indexar (`/lote`): carpeta + tipo por corte. `document_batches.folder` nullable. Las 6 tarjetas de carga quedan en una. |
+| 2026-09-09 | Cargar documentos en modal centrado. N/A visible para interno/admin sin `?cargar=1`. |

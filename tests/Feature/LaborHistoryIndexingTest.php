@@ -41,7 +41,9 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('1/25 indexados')
             ->assertSee('3/8 indexados')
             ->assertSee('0/20 soportes')
-            ->assertDontSee('Indexar lote');
+            ->assertDontSee('Cargar documentos')
+            ->assertDontSee('Indexar lote')
+            ->assertDontSee('No aplica');
 
         $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/lote')
@@ -296,10 +298,12 @@ final class LaborHistoryIndexingTest extends TestCase
         $contractId = $person->contracts()->value('contracts.id');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId.'&cargar=1')
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
             ->assertOk()
+            ->assertSee('Cargar documentos')
             ->assertSee('Indexar lote')
-            ->assertSee('Un PDF por lote');
+            ->assertSee('Un PDF por lote')
+            ->assertSee('No aplica');
 
         return [$interno, $person];
     }

@@ -48,7 +48,7 @@
                     <div class="index-composer-actions">
                         <button class="btn ghost" type="button" id="add-slice">Agregar a la lista</button>
                         <button class="btn" type="submit">Guardar indexación</button>
-                        <a class="btn ghost" href="{{ route('documents.folder', ['person' => $person, 'cargar' => 1]) }}">Cancelar</a>
+                        <a class="btn ghost" href="{{ route('documents.folder', $person) }}">Cancelar</a>
                     </div>
                 </div>
                 <div id="slice-rows" class="index-slice-list"></div>

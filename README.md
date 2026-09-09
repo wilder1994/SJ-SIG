@@ -62,7 +62,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
 | **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) indexadas | Interno/admin: un PDF + indexar (carpeta/tipo por corte); entidad consulta Listado/ojo |
+| **Documentos** | Carpeta por vigilante. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) indexadas | Interno/admin: modal PDF + indexar (carpeta/tipo por corte); entidad consulta Listado/ojo |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad), **Afiliaciones** (8; las hace la empresa) y **Otros** (tipo libre, máx. 20; el nombre no puede cruzar con las otras listas): **un solo PDF** (`POST /documentos/carpeta/{person}/lote`). Interno/admin: **Cargar documentos** → Indexar lote → por cada grupo de páginas elige **carpeta** y **tipo** (un PDF puede alimentar varias carpetas). Consulta: **Listado** + ojo. N/A sigue por carpeta. Tope: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate` (`document_batches.folder` nullable) y `npm run build`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad), **Afiliaciones** (8; las hace la empresa) y **Otros** (tipo libre, máx. 20; el nombre no puede cruzar con las otras listas): **un solo PDF** (`POST /documentos/carpeta/{person}/lote`). Interno/admin: **Cargar documentos** (modal) → Indexar lote → por cada grupo de páginas elige **carpeta** y **tipo** (un PDF puede alimentar varias carpetas). Consulta: **Listado** + ojo. N/A visible para quien carga, sin modo extra. Tope: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate` (`document_batches.folder` nullable) y `npm run build`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

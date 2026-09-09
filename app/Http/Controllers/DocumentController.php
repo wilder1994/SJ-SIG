@@ -90,7 +90,7 @@ final class DocumentController extends Controller
         );
 
         return redirect()
-            ->route('documents.folder', ['person' => $model, 'cargar' => 1])
+            ->route('documents.folder', $model)
             ->with('status', 'Documento cargado en la carpeta del vigilante.');
     }
 
@@ -244,7 +244,7 @@ final class DocumentController extends Controller
         $this->historyNa->execute($model, $folder, $type);
 
         return redirect()
-            ->route('documents.folder', ['person' => $model, 'cargar' => 1])
+            ->route('documents.folder', $model)
             ->with('status', $type->label().' marcado como no aplica.');
     }
 
