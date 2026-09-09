@@ -10,13 +10,15 @@
 }
 
 :root {
-    --ink: #12151a;
-    --ink-soft: #3c414a;
-    --paper: #f3ece0;
-    --paper-2: #fffaf1;
-    --brass: #9c7a32;
-    --brass-deep: #6f5420;
-    --line: rgba(18, 21, 26, 0.12);
+    --ink: #0b1220;
+    --ink-soft: #5a6578;
+    --paper: #e8eef6;
+    --paper-2: #f4f7fb;
+    --brass: #1c7ae6;
+    --brass-deep: #0b3d91;
+    --cyan: #58c4ff;
+    --steel: #b8c2d4;
+    --line: rgba(11, 18, 32, 0.12);
     --ok: #1f6a4c;
     --warn: #9a4a12;
     --bad: #8c1f1f;
@@ -46,8 +48,8 @@ html, body {
 }
 
 .rail {
-    background: var(--ink);
-    color: #efe7d6;
+    background: linear-gradient(180deg, var(--brass-deep) 0%, var(--ink) 72%);
+    color: #e8eef6;
     padding: 22px 16px;
     display: flex;
     flex-direction: column;
@@ -64,7 +66,7 @@ html, body {
 
 .nav a {
     display: block;
-    color: #cfc6b6;
+    color: var(--steel);
     text-decoration: none;
     padding: 7px 8px;
     border-radius: 4px;
@@ -72,7 +74,7 @@ html, body {
 }
 
 .nav a:hover, .nav a.is-on {
-    background: rgba(255,255,255,.06);
+    background: rgba(88, 196, 255, 0.12);
     color: #fff;
 }
 
@@ -148,14 +150,15 @@ table.data td {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--ink);
-    color: #f6efe3;
-    border: 0;
+    background: linear-gradient(180deg, var(--brass) 0%, var(--brass-deep) 100%);
+    color: #fff;
+    border: 1px solid rgba(88, 196, 255, 0.45);
     border-radius: 6px;
     padding: 8px 12px;
     font-size: 12.5px;
     cursor: pointer;
     text-decoration: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .btn.ghost {
@@ -187,9 +190,9 @@ table.data td {
 
 .login-hero {
     background:
-        radial-gradient(1200px 500px at 10% -10%, rgba(156,122,50,.35), transparent 50%),
-        var(--ink);
-    color: #f4eadb;
+        radial-gradient(1200px 500px at 10% -10%, rgba(88, 196, 255, 0.32), transparent 48%),
+        linear-gradient(155deg, var(--brass-deep) 0%, #1457c4 42%, var(--ink) 100%);
+    color: #e8eef6;
     padding: 48px;
     display: flex;
     flex-direction: column;

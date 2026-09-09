@@ -169,6 +169,8 @@ Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
 Capas: `Controllers` → `Services` → `Repositories` → `Models`. Policies por recurso. Scope global de tenant. Importación Excel en `ImportPersonnelWorkbookService`.
 
+UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
+
 Local aislado:
 
 - LAN por IP (puerto **8086**, no usa `:80` de Armory): `http://172.16.16.70:8086` o `http://192.168.18.14:8086`
@@ -204,3 +206,4 @@ Local aislado:
 | 2026-09-08 | Cruce con texto del pliego 4.2.4 (subfactor 2,0). Supervisor atado a un contrato. Novedades en alcance. Carga masiva: plantilla `ficha_empleados SJ-SIG.xlsx` (fila 1 encabezado, fila 2 ayuda, fila 3+ datos). Nómina oculta a la entidad. Puesto del contrato fuera de esa ficha. |
 | 2026-09-08 | Scaffold Laravel 13. Tenancy, módulos 1–9, tablero gerencial, importación Excel, seed A/B, vhost Apache `sj-sig.test`, DB `sj_sig`. |
 | 2026-09-08 | Acceso LAN por IP en puerto 8086. Documentación de arranque y vhost versionado en `docs/apache`. |
+| 2026-09-08 | Paleta UI alineada al logo institucional (navy/azure/cian/plata), sin cambiar el diseño. |

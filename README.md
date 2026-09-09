@@ -28,6 +28,8 @@ Clave demo: `Sig2026!`
 
 Laravel 13, PHP 8.3, MySQL (`sj_sig`), Vite 8, Tailwind 4. Capas: Controller → Service → Repository → Model + policies y scope de tenant.
 
+UI: mismo layout gerencial; paleta institucional del logo SJ (navy, azure, cian, plata/acero). Tokens en `resources/css/app.css`.
+
 ## Arranque (Laragon)
 
 1. Copiar `.env.example` → `.env` y `php artisan key:generate`.

@@ -7,13 +7,13 @@
     <section class="login-hero">
         <div>
             <div class="brand-mark" style="font-size:34px">SJ-<span>SIG</span></div>
-            <p style="max-width:28rem;margin-top:18px;color:#d9d0bf;line-height:1.55">
+            <p style="max-width:28rem;margin-top:18px;color:#b8c2d4;line-height:1.55">
                 Tablero de supervisión, trazabilidad y control del servicio de vigilancia. Un contrato, un universo.
             </p>
         </div>
         <div>
-            <p class="kicker" style="color:#c4b79a">Anexo 7.4</p>
-            <p style="margin:8px 0 0;color:#efe7d6" class="display">Gestión sin ruido. Evidencia con fecha.</p>
+            <p class="kicker" style="color:var(--cyan)">Anexo 7.4</p>
+            <p style="margin:8px 0 0;color:#e8eef6" class="display">Gestión sin ruido. Evidencia con fecha.</p>
         </div>
     </section>
     <section class="login-panel">

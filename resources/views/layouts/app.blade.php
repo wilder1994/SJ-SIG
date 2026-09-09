@@ -5,7 +5,7 @@
     <aside class="rail">
         <div>
             <div class="brand-mark">SJ-<span>SIG</span></div>
-            <p class="muted" style="color:#b7ae9e;margin:8px 0 0;font-size:11px;">Supervisión contractual</p>
+            <p class="muted" style="color:var(--steel);margin:8px 0 0;font-size:11px;">Supervisión contractual</p>
         </div>
         <nav class="nav">
             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'is-on' : '' }}">Tablero</a>
@@ -18,7 +18,7 @@
         </nav>
         <form method="post" action="{{ route('logout') }}" style="margin-top:auto">
             @csrf
-            <button class="btn ghost" style="color:#efe7d6;border-color:rgba(255,255,255,.14);width:100%">Salir</button>
+            <button class="btn ghost" style="color:#e8eef6;border-color:rgba(88,196,255,.28);width:100%">Salir</button>
         </form>
     </aside>
     <main class="stage">
