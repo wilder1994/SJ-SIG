@@ -147,19 +147,73 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente: HV, certificados, cursos (título + fecha y actas PDF), afiliaciones PDF, otros. Supervisor y operaciones: Ver/Descargar. Interno/admin: **Cargar documentos** (`?cargar=1`).
-
-La entidad no valida con el texto de la tabla: ve **PDF reales**, previsualizados in-app (`/documentos/archivo/{id}/ver`) y con descarga opcional.
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`).
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
-| Hoja de vida | HV | Documentos → carpeta |
+| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Subir PDF multipágina → indexar (v1). Escáner pendiente |
 | Certificados | Aptitud, armas, escolta, policía, etc. | Documentos → carpeta |
 | Cursos | Título y fecha + acta/diploma PDF | Documentos → carpeta |
 | Afiliaciones | Certificado PDF de EPS, pensión y caja | Documentos → carpeta (nombres siguen en la ficha) |
-| Otros | Cédula, foto, RUT | Documentos → carpeta |
+| Otros | Soportes que no caben arriba | Documentos → carpeta |
 
 Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
+
+### 6.1 Historia Laboral — gestión documental (próxima implementación)
+
+Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gestión documental indexada** por tipo de documento.
+
+#### Alcance v1 (acordado)
+
+- Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
+- Catálogo fijo de tipos de documento (lista operativa SJ).
+- En modo carga: botón **Subir** (PDF ya digitalizado, preferible multipágina).
+- Pantalla **Indexar lote**: seleccionar una o varias páginas → asignar tipo del catálogo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (PDF cortado/separado).
+- En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
+- Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
+
+#### Fuera de v1 (pendiente de decisión)
+
+- Botón **Escanear** con escáner TWAIN/WIA o agente local Windows. El navegador no habla al escáner nativo; se decidirá después (agente local vs. solo digitalización externa + Subir).
+- Semáforo de completitud en el tablero (% Historia Laboral) puede venir justo después del indexador.
+
+#### Catálogo de tipos (Historia Laboral)
+
+| # | Documento | Notas |
+|---|-----------|--------|
+| 1 | Formato de requisición de personal | |
+| 2 | Registro conocimiento del empleado | |
+| 3 | Hoja de vida | |
+| 4 | Fotocopia de la cédula de ciudadanía | |
+| 5 | Certificado etnia – factor de vulnerabilidad | Si aplica |
+| 6 | Foto 3×4 fondo blanco o azul | |
+| 7 | Certificados de estudio formal y no formal | |
+| 8 | Resolución de retiro de entidades de fuerza pública | Si aplica |
+| 9 | Certificaciones laborales con verificación de referencias | |
+| 10 | Libreta militar | Opcional |
+| 11 | Verificación de antecedentes | |
+| 12 | Licencia de conducción (categoría A2 / B1 según aplique) | |
+| 13 | Tarjeta de propiedad (licencia de tránsito) | |
+| 14 | SOAT | |
+| 15 | Revisión tecnomecánica | |
+| 16 | Evaluación de conocimiento | Si aplica |
+| 17 | Entrevista selección | |
+| 18 | Prueba psicotécnica | |
+| 19 | Entrevista técnica de líder de área | |
+| 20 | Estudio de confiabilidad | Si aplica |
+| 21 | Prueba de poligrafía | Si aplica |
+| 22 | Documentos de beneficiarios | |
+| 23 | Certificación bancaria | |
+| 24 | Examen médico ocupacional de ingreso | |
+| 25 | Examen psicofísico | Si aplica |
+| 26 | Examen psicosensométrico | Si aplica |
+
+#### Capas técnicas previstas
+
+- Enum `LaborHistoryDocumentType` (código, etiqueta, required/optional).
+- Extensión de `person_documents` (o servicio de indexación) + `IndexLaborHistoryPdfService` (partir PDF por rangos de página).
+- UI: `documents/folder` (consulta Listado) + vista de indexación post-upload.
+- Sin cambiar el aislamiento por cliente/contrato.
 
 ---
 
@@ -169,7 +223,7 @@ Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** p
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho: ficha vs carpeta (ver §6) |
+| 3 | Personal + import Excel + gestor documental | Hecho base. **Próximo:** Historia Laboral indexada (subir PDF + indexar). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
@@ -195,7 +249,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 ### Tablero (visión)
 
-- Semáforo documental (HV, certificados, cursos, seguridad social, parafiscal del mes).  
+- Semáforo documental (Historia Laboral indexada, certificados, cursos, seguridad social, parafiscal del mes).  
 - Servicios por puesto (semana / mes / acumulado).  
 - Mantenimientos: últimos, vencidos, sin evidencia.  
 - Novedades abiertas vs. cerradas.  
@@ -214,11 +268,12 @@ UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Segurid
 
 Local aislado:
 
-- LAN por IP (puerto **8086**, no usa `:80` de Armory): `http://172.16.16.70:8086` o `http://192.168.18.14:8086`
-- Vhost Apache: `00-aae-sj-sig.conf` (`Listen 8086` + `sj-sig.test` en 80/443). Recargar Apache en Laragon.
+- LAN: puerto **8086** en `0.0.0.0` (cualquier IP del servidor). URL: `http://<IP>:8086/ingreso`. No usa `:80` si Armory u otro vhost lo ocupa.
+- Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
+- Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull con instalaciones: `php artisan migrate` (crea `sites` y capacidad en `posts`). Demo completo: `php artisan migrate:fresh --seed`.
-- Si `php` no está en PATH (Laragon): `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
+- Tras pull con instalaciones: `php artisan migrate`. Demo: `php artisan migrate:fresh --seed`.
+- Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
 ### Usuarios y claves de prueba (demo local)
 
@@ -250,7 +305,8 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 - Texto literal del Anexo 7.4 y del resto del 4.2.4 (puntos que completan los 9,0).  
 - Expansión formal definitiva de “SIG” (Gestión vs. Gestión y Seguimiento).  
 - Segundo archivo vs. pantalla para asignar persona ↔ puesto.  
-- Hosting (Laragon/demo local vs. URL HTTPS de presentación).
+- Hosting (Laragon/demo local vs. URL HTTPS de presentación).  
+- **Escáner en Historia Laboral:** agente Windows / TWAIN vs. solo digitalización externa + Subir (v1 solo Subir + indexar).
 
 ---
 
@@ -267,3 +323,5 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-08 | Separación Personal (ficha HR) vs Documentos (carpeta por vigilante). Cursos y PDF viven en Documentos. |
 | 2026-09-08 | Módulos Clientes y Usuarios. Rol `interno` (todos los clientes) y `operaciones` (un cliente, listado Equipo SJ). Perfil de solo lectura. Clave con ojito y cambio en primer ingreso. |
 | 2026-09-08 | Instalaciones → puestos con modalidad (8/12/24 h) y unidades (cupo de vigilantes). Tabla demo de usuarios/claves en el informe. |
+| 2026-09-09 | Acceso LAN: Listen `0.0.0.0:8086`, script firewall y docs para cualquier equipo de la misma red. |
+| 2026-09-09 | Especificación Historia Laboral (gestión documental indexada): catálogo de 26 tipos, Subir PDF + indexar, Listado con preview. Escáner dejado pendiente. |

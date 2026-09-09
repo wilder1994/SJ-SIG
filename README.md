@@ -4,15 +4,27 @@ Sistema Integral de Gestión de vigilancia y seguridad privada (SJ). Bitácora d
 
 Factor 4.2.4 del pliego (herramienta tecnológica, 2,0 puntos): tablero de supervisión, gestor documental, cursos, afiliaciones, parafiscales, electrónica, servicios por puesto y novedades. Multi-cliente con aislamiento por tenant/contrato.
 
-## Acceso local
+## Acceso local / LAN
 
-Puerto **8086** (no usa el `:80`; Armory permanece en `172.16.16.70`).
+Puerto **8086** en **todas las interfaces** (`0.0.0.0`). Cualquier equipo de la misma red entra con la IP del servidor Laragon:
 
-| Red | URL |
-|-----|-----|
-| Ethernet | http://172.16.16.70:8086/ingreso |
-| Wi-Fi | http://192.168.18.14:8086/ingreso |
-| Hosts local | http://sj-sig.test (tras recargar Apache) |
+`http://<IP-del-servidor>:8086/ingreso`
+
+| Desde | URL típica |
+|-------|------------|
+| Este PC (hosts) | http://sj-sig.test (Apache 80/443) |
+| Misma red Wi‑Fi / Ethernet | `http://IP:8086/ingreso` (ver IP abajo) |
+
+**IPs actuales del servidor** (cambian si el router asigna otra): consultar con `ipconfig` o el script de firewall. Ejemplo reciente: Wi‑Fi `http://192.168.1.39:8086/ingreso`.
+
+**Firewall (obligatorio para otros PCs):** PowerShell **como Administrador**:
+
+```powershell
+cd C:\laragon\www\SJ-SIG
+.\docs\apache\abrir-firewall-8086.ps1
+```
+
+Vhost: `docs/apache/00-aae-sj-sig.conf` → `C:\laragon\etc\apache2\sites-enabled\` y **Reload Apache** en Laragon.
 
 Clave demo: `Sig2026!`
 
@@ -50,13 +62,15 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
 | **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. Visor in-app | Interno / admin cargan; entidad y operaciones consultan |
+| **Documentos** | Carpeta por vigilante. **Historia Laboral** indexada (próx.) | Interno/admin: Subir PDF + indexar; entidad consulta Listado/ojo |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
-Flujo: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
+Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
+
+**Próximo (documentado en el informe §6.1, aún no código):** carpeta **Historia Laboral** con checklist de tipos; subir PDF multipágina → indexar páginas → archivos separados; consulta vía **Listado** + preview. Botón **Escanear** pendiente de decisión.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 
