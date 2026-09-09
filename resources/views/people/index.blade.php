@@ -5,10 +5,15 @@
 @section('content')
 <div class="split">
     <article class="card">
-        <form method="get" style="display:flex;gap:8px;margin-bottom:12px">
-            <input type="search" name="q" value="{{ request('q') }}" placeholder="Nombre o cédula" style="flex:1">
-            <button class="btn" type="submit">Buscar</button>
-        </form>
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px">
+            <form method="get" style="display:flex;gap:8px;flex:1">
+                <input type="search" name="q" value="{{ request('q') }}" placeholder="Nombre o cédula" style="flex:1">
+                <button class="btn" type="submit">Buscar</button>
+            </form>
+            @if(auth()->user()->role->canUploadEvidence())
+                <a class="btn" href="{{ route('people.create') }}">Nuevo empleado</a>
+            @endif
+        </div>
         <table class="data">
             <thead><tr><th>Identificación</th><th>Nombre</th><th>EPS</th><th></th></tr></thead>
             <tbody>
@@ -30,7 +35,7 @@
     <article class="card">
         <p class="kicker">Carga masiva</p>
         <h2 class="display" style="font-size:22px;margin:6px 0 10px">Plantilla SJ-SIG</h2>
-        <p class="muted">Fila 1 encabezado, fila 2 ayuda, desde la 3 trabajadores. Upsert por cédula.</p>
+        <p class="muted">Fila 1 encabezado, fila 2 ayuda, desde la 3 trabajadores. Los PDF se cargan en Documentos → carpeta del vigilante.</p>
         <form method="post" action="{{ route('people.import') }}" enctype="multipart/form-data" style="margin-top:14px" class="field">
             @csrf
             <input type="file" name="workbook" accept=".xlsx,.xls" required>

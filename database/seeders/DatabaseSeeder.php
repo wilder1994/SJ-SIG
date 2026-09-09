@@ -18,9 +18,9 @@ use App\Models\Post;
 use App\Models\ServiceDelivery;
 use App\Models\Tenant;
 use App\Models\User;
+use App\Support\Files\SimplePdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
 
 final class DatabaseSeeder extends Seeder
@@ -148,28 +148,21 @@ final class DatabaseSeeder extends Seeder
             'taken_on' => '2026-02-12',
         ]);
 
-        $relative = 'tenants/'.$tenant->id.'/contracts/'.$contract->id.'/people/'.$person->id.'/hv/hv.txt';
-        $absolute = storage_path('app/'.$relative);
-        File::ensureDirectoryExists(dirname($absolute));
-        File::put($absolute, 'Hoja de vida demo '.$person->full_name);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::HojaVida, 'Hoja de vida.pdf', 'Hoja de vida', $person->full_name);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Certificados, 'Certificado de aptitud.pdf', 'Certificado de aptitud', 'Vigente para el servicio contratado');
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Cursos, 'Acta curso manejo de defensas.pdf', 'Acta de curso', 'Manejo de defensas 2026-02-12');
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado EPS.pdf', 'Certificado de afiliacion EPS', (string) $person->eps_name);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado pension.pdf', 'Certificado de afiliacion pension', (string) $person->afp_name);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado caja.pdf', 'Certificado de caja de compensacion', (string) $person->compensation_fund);
 
-        PersonDocument::query()->create([
-            'tenant_id' => $tenant->id,
-            'person_id' => $person->id,
-            'folder' => DocumentFolder::HojaVida,
-            'original_name' => 'HV.pdf',
-            'disk_path' => $relative,
-            'mime' => 'text/plain',
-            'size_bytes' => 32,
-            'expires_on' => now()->addDays(12),
-        ]);
-
+        $parafiscalRel = 'tenants/'.$tenant->id.'/contracts/'.$contract->id.'/parafiscals/'.$month->format('Y-m').'/pila.pdf';
+        SimplePdf::write(storage_path('app/'.$parafiscalRel), 'Planilla PILA '.$month->format('Y-m'), 'Soporte parafiscal de empresa para el contrato '.$contract->code);
         CompanyParafiscal::query()->create([
             'tenant_id' => $tenant->id,
             'contract_id' => $contract->id,
-            'period' => now()->format('Y-m'),
+            'period' => $month->format('Y-m'),
             'original_name' => 'Planilla PILA '.$month->format('Y-m').'.pdf',
-            'disk_path' => 'tenants/'.$tenant->id.'/parafiscal.txt',
+            'disk_path' => $parafiscalRel,
         ]);
 
         $asset = ElectronicAsset::query()->create([
@@ -209,5 +202,36 @@ final class DatabaseSeeder extends Seeder
         ]);
 
         return compact('tenant', 'contract');
+    }
+
+    private function storePersonPdf(
+        int $tenantId,
+        int $contractId,
+        Person $person,
+        DocumentFolder $folder,
+        string $filename,
+        string $title,
+        string $body,
+    ): void {
+        $relative = sprintf(
+            'tenants/%d/contracts/%d/people/%d/%s/%s',
+            $tenantId,
+            $contractId,
+            $person->id,
+            $folder->value,
+            str_replace(' ', '-', strtolower($filename)),
+        );
+        $absolute = storage_path('app/'.$relative);
+        SimplePdf::write($absolute, $title, $body);
+        PersonDocument::query()->create([
+            'tenant_id' => $tenantId,
+            'person_id' => $person->id,
+            'folder' => $folder,
+            'original_name' => $filename,
+            'disk_path' => $relative,
+            'mime' => 'application/pdf',
+            'size_bytes' => is_file($absolute) ? (int) filesize($absolute) : 0,
+            'expires_on' => $folder === DocumentFolder::HojaVida ? now()->addDays(12) : null,
+        ]);
     }
 }

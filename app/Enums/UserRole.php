@@ -41,6 +41,11 @@ enum UserRole: string
         return in_array($this, [self::AdminEmpresa, self::Operador], true);
     }
 
+    public function canUploadEvidence(): bool
+    {
+        return $this->canImportPersonnel();
+    }
+
     public function canRegisterMaintenance(): bool
     {
         return in_array($this, [self::AdminEmpresa, self::TecnicoElectronica], true);

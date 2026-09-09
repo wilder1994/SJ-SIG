@@ -29,6 +29,16 @@ final class TenantIsolationTest extends TestCase
             ->get('/personal/'.$personB->id)
             ->assertNotFound();
 
+        $this->actingAs($supervisorA)
+            ->get('/documentos')
+            ->assertOk()
+            ->assertSee('Ana Vigilante A')
+            ->assertDontSee('Bruno Vigilante B');
+
+        $this->actingAs($supervisorA)
+            ->get('/documentos/carpeta/'.$personB->id)
+            ->assertNotFound();
+
         $this->actingAs($supervisorB)
             ->get('/personal')
             ->assertOk()

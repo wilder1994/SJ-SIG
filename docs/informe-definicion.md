@@ -134,23 +134,51 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Puesto:** la ficha no trae puesto de la Alcaldía. Decisión: **no mapear** centros de costo WM a puestos. Tras el import, asignación en un segundo paso (Excel corto `cedula` + código/nombre de puesto, o pantalla). Columna extra `puesto` en la ficha queda como extensión si más adelante se unifica en un solo archivo.
 
+### Personal vs Documentos (IA de producto)
+
+**Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
+
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente: HV, certificados, cursos (título + fecha y actas PDF), afiliaciones PDF, otros. Supervisor: Ver/Descargar. Operador/admin: **Cargar documentos** (`?cargar=1`).
+
+La entidad no valida con el texto de la tabla: ve **PDF reales**, previsualizados in-app (`/documentos/archivo/{id}/ver`) y con descarga opcional.
+
+| Carpeta | Contenido | Carga |
+|---------|-----------|--------|
+| Hoja de vida | HV | Documentos → carpeta |
+| Certificados | Aptitud, armas, escolta, policía, etc. | Documentos → carpeta |
+| Cursos | Título y fecha + acta/diploma PDF | Documentos → carpeta |
+| Afiliaciones | Certificado PDF de EPS, pensión y caja | Documentos → carpeta (nombres siguen en la ficha) |
+| Otros | Cédula, foto, RUT | Documentos → carpeta |
+
+Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
+
 ---
 
 ## 7. Módulos previstos
 
-Orden de construcción acordado (aún no iniciado):
+| # | Módulo | Estado v1 local |
+|---|--------|-----------------|
+| 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest`: personal + carpeta documental) |
+| 2 | Clientes, contratos, puestos | Seed / consulta; asignación persona↔puesto pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho: ficha vs carpeta (ver §6) |
+| 4 | Asignación persona ↔ puesto del contrato | Pendiente |
+| 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
+| 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
+| 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
+| 8 | Servicios por puesto | Consulta seed |
+| 9 | Novedades de ejecución | Alta + listado |
+| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero KPI; exportación PDF/Excel pendiente |
+| 11 | Usuarios demo A vs B | Hecho |
 
-1. Tenancy, roles, tests de aislamiento  
-2. Clientes, contratos, puestos  
-3. Personal + **importación plantilla SJ-SIG** + gestor documental + búsqueda  
-4. Asignación persona ↔ puesto del contrato  
-5. Cursos  
-6. EPS / caja / pensión (ficha) + parafiscales de empresa  
-7. Activos electrónicos + mantenimientos (registro, consulta y evidencias)  
-8. Servicios por puesto  
-9. Novedades de ejecución  
-10. Dashboard y reportes (semana, mes, vigencia)  
-11. Usuarios demo (supervisor A vs supervisor B) para demostración de isolation  
+### Rutas de evidencia (v1)
+
+| Recurso | Listado | Carpeta / alta | Visor | Descarga |
+|---------|---------|----------------|-------|----------|
+| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
+| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
+
+Carga de PDF y cursos: `admin_empresa` y `operador` (`canUploadEvidence`). Entidad: Ver/Descargar.  
 
 ### Tablero (visión)
 
@@ -167,7 +195,7 @@ Orden de construcción acordado (aún no iniciado):
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Policies por recurso. Scope global de tenant. Importación Excel en `ImportPersonnelWorkbookService`.
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder` (inline vs attachment). Storage: `storage/app/tenants/...` (no se versiona).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -207,3 +235,5 @@ Local aislado:
 | 2026-09-08 | Scaffold Laravel 13. Tenancy, módulos 1–9, tablero gerencial, importación Excel, seed A/B, vhost Apache `sj-sig.test`, DB `sj_sig`. |
 | 2026-09-08 | Acceso LAN por IP en puerto 8086. Documentación de arranque y vhost versionado en `docs/apache`. |
 | 2026-09-08 | Paleta UI alineada al logo institucional (navy/azure/cian/plata), sin cambiar el diseño. |
+| 2026-09-08 | Alta unitaria, carga PDF (HV, certificados, afiliaciones, cursos, parafiscales) y visor in-app. |
+| 2026-09-08 | Separación Personal (ficha HR) vs Documentos (carpeta por vigilante). Cursos y PDF viven en Documentos. |

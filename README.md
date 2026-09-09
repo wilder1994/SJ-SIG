@@ -41,7 +41,15 @@ UI: mismo layout gerencial; paleta institucional del logo SJ (navy, azure, cian,
 
 Firewall: permitir TCP **8086** en red privada si otros PCs no entran.
 
-## Carga masiva de personal
+## Personal vs Documentos
+
+| Módulo | Qué es | Quién carga |
+|--------|--------|-------------|
+| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha (identidad + EPS/pensión/caja/ARL en texto) | Operador / admin |
+| **Documentos** | Una carpeta por vigilante (HV, certificados, cursos, afiliaciones PDF, otros). Visor in-app | Operador / admin; entidad solo Ver/Descargar |
+| **Parafiscales** | PILA u soporte de **empresa** por periodo (no de la persona) | Operador / admin |
+
+Flujo: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

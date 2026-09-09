@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Personnel\ImportPersonnelRequest;
+use App\Http\Requests\Personnel\StorePersonRequest;
 use App\Models\Contract;
 use App\Repositories\Contracts\PersonRepositoryInterface;
+use App\Services\Personnel\CreatePersonService;
 use App\Services\Personnel\ImportPersonnelWorkbookService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,6 +17,7 @@ final class PersonController extends Controller
     public function __construct(
         private readonly PersonRepositoryInterface $people,
         private readonly ImportPersonnelWorkbookService $importer,
+        private readonly CreatePersonService $creator,
     ) {}
 
     public function index(Request $request): View
@@ -25,6 +28,22 @@ final class PersonController extends Controller
         return view('people.index', [
             'people' => $this->people->paginateForContract($contract->id, $request->string('q')->toString() ?: null),
         ]);
+    }
+
+    public function create(): View
+    {
+        abort_unless(auth()->user()?->role->canUploadEvidence() ?? false, 403);
+
+        return view('people.create');
+    }
+
+    public function store(StorePersonRequest $request): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $person = $this->creator->execute($contract, $request->validated());
+
+        return redirect()->route('people.show', $person)->with('status', 'Empleado registrado. Los PDF se cargan en Documentos → carpeta.');
     }
 
     public function show(Request $request, int $person): View

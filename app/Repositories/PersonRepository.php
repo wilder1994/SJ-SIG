@@ -12,6 +12,7 @@ final class PersonRepository implements PersonRepositoryInterface
     {
         return Person::query()
             ->whereHas('contracts', fn ($q) => $q->where('contracts.id', $contractId))
+            ->withCount('documents')
             ->when($search, function ($query) use ($search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('full_name', 'like', '%'.$search.'%')

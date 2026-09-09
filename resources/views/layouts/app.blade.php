@@ -46,4 +46,16 @@
         @yield('content')
     </main>
 </div>
+<div class="preview-layer" id="preview-layer" hidden>
+    <div class="preview-frame">
+        <div class="preview-bar">
+            <span id="preview-title">Documento</span>
+            <span>
+                <a class="btn ghost" id="preview-download" href="#" style="color:#e8eef6;border-color:rgba(88,196,255,.35)">Descargar</a>
+                <button class="btn ghost" type="button" id="preview-close" style="color:#e8eef6;border-color:rgba(88,196,255,.35)">Cerrar</button>
+            </span>
+        </div>
+        <iframe id="preview-iframe" title="Vista del documento"></iframe>
+    </div>
+</div>
 @endsection
