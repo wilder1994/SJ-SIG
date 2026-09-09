@@ -2,7 +2,6 @@
 
 namespace App\Repositories;
 
-use App\Enums\UserRole;
 use App\Models\Contract;
 use App\Models\User;
 use App\Repositories\Contracts\ContractRepositoryInterface;
@@ -14,7 +13,7 @@ final class ContractRepository implements ContractRepositoryInterface
     {
         $query = Contract::query()->with('tenant');
 
-        if ($user->role === UserRole::AdminEmpresa) {
+        if ($user->role->seesAllClients()) {
             return $query->find($id);
         }
 
@@ -29,7 +28,7 @@ final class ContractRepository implements ContractRepositoryInterface
     {
         $query = Contract::query()->with('tenant')->orderBy('name');
 
-        if ($user->role === UserRole::AdminEmpresa) {
+        if ($user->role->seesAllClients()) {
             return $query->get();
         }
 

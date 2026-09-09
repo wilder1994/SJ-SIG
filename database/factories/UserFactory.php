@@ -21,7 +21,10 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
-            'role' => UserRole::Operador,
+            'role' => UserRole::Interno,
+            'document_number' => fake()->unique()->numerify('1#######'),
+            'is_active' => true,
+            'must_change_password' => false,
             'tenant_id' => null,
             'contract_id' => null,
         ];

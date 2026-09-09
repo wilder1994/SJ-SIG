@@ -17,7 +17,7 @@ final class TenantScope implements Scope
             return;
         }
 
-        if ($user->role->isInternal() && $user->role === \App\Enums\UserRole::AdminEmpresa) {
+        if ($user->role->seesAllClients()) {
             return;
         }
 

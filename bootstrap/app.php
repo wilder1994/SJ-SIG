@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Middleware\BindCurrentContract;
+use App\Http\Middleware\EnsurePasswordWasChanged;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ForceRequestRootUrl;
+use App\Http\Middleware\RequireCurrentContract;
+use App\Http\Middleware\RestrictTechnicianModules;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -20,6 +24,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->alias([
             'contract.bound' => BindCurrentContract::class,
+            'user.active' => EnsureUserIsActive::class,
+            'password.changed' => EnsurePasswordWasChanged::class,
+            'tech.modules' => RestrictTechnicianModules::class,
+            'contract.required' => RequireCurrentContract::class,
         ]);
         $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('dashboard'));

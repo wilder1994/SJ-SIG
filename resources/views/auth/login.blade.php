@@ -8,7 +8,7 @@
         <div>
             <div class="brand-mark" style="font-size:34px">SJ-<span>SIG</span></div>
             <p style="max-width:28rem;margin-top:18px;color:#b8c2d4;line-height:1.55">
-                Tablero de supervisión, trazabilidad y control del servicio de vigilancia. Un contrato, un universo.
+                Tablero de supervisión para cada cliente de SJ. Un cliente, un universo.
             </p>
         </div>
         <div>
@@ -20,14 +20,17 @@
         <form method="post" action="{{ route('login.store') }}" style="width:min(380px,100%)" class="card">
             @csrf
             <p class="kicker">Acceso</p>
-            <h2 class="display" style="font-size:28px;margin:6px 0 16px">Entrar al contrato</h2>
+            <h2 class="display" style="font-size:28px;margin:6px 0 16px">Entrar a SJ-SIG</h2>
             <div class="field" style="margin-bottom:10px">
-                <label for="email">Correo</label>
+                <label for="email">Correo corporativo</label>
                 <input id="email" name="email" type="email" value="{{ old('email') }}" required autofocus>
             </div>
             <div class="field" style="margin-bottom:14px">
                 <label for="password">Clave</label>
-                <input id="password" name="password" type="password" required>
+                <span class="password-wrap">
+                    <input id="password" name="password" type="password" required>
+                    <button type="button" class="btn ghost password-toggle" data-password-toggle>Ver</button>
+                </span>
             </div>
             @error('email')
                 <p style="color:var(--bad);margin-bottom:10px">{{ $message }}</p>

@@ -34,6 +34,11 @@ final class DatabaseSeeder extends Seeder
             'email' => 'admin@sj-sig.test',
             'password' => $password,
             'role' => UserRole::AdminEmpresa,
+            'document_type' => 'C',
+            'document_number' => '10000001',
+            'job_title' => 'Administrador de plataforma',
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
 
         $alcaldia = $this->seedTenant(
@@ -53,12 +58,14 @@ final class DatabaseSeeder extends Seeder
         );
 
         User::query()->create([
-            'name' => 'Operador Alcaldía',
-            'email' => 'operador.a@sj-sig.test',
+            'name' => 'Gestión humana SJ',
+            'email' => 'interno@sj-sig.test',
             'password' => $password,
-            'role' => UserRole::Operador,
-            'tenant_id' => $alcaldia['tenant']->id,
-            'contract_id' => null,
+            'role' => UserRole::Interno,
+            'document_number' => '10000002',
+            'job_title' => 'Analista de gestión humana',
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
 
         User::query()->create([
@@ -66,7 +73,12 @@ final class DatabaseSeeder extends Seeder
             'email' => 'tecnico@sj-sig.test',
             'password' => $password,
             'role' => UserRole::TecnicoElectronica,
+            'document_number' => '10000003',
+            'job_title' => 'Técnico de electrónica',
             'tenant_id' => $alcaldia['tenant']->id,
+            'contract_id' => $alcaldia['contract']->id,
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
 
         User::query()->create([
@@ -74,8 +86,12 @@ final class DatabaseSeeder extends Seeder
             'email' => 'supervisor.a@sj-sig.test',
             'password' => $password,
             'role' => UserRole::SupervisorEntidad,
+            'document_number' => '10000004',
+            'job_title' => 'Supervisor de contrato',
             'tenant_id' => $alcaldia['tenant']->id,
             'contract_id' => $alcaldia['contract']->id,
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
 
         User::query()->create([
@@ -83,8 +99,12 @@ final class DatabaseSeeder extends Seeder
             'email' => 'supervisor.b@sj-sig.test',
             'password' => $password,
             'role' => UserRole::SupervisorEntidad,
+            'document_number' => '10000005',
+            'job_title' => 'Supervisor de contrato',
             'tenant_id' => $entidadB['tenant']->id,
             'contract_id' => $entidadB['contract']->id,
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
     }
 
@@ -184,11 +204,16 @@ final class DatabaseSeeder extends Seeder
         ]);
 
         $opener = User::query()->create([
-            'name' => 'Sistema seed '.$slug,
-            'email' => 'seed.'.$slug.'@sj-sig.test',
-            'password' => Hash::make('unused'),
-            'role' => UserRole::Operador,
+            'name' => 'Coordinador operaciones '.$tenantName,
+            'email' => $slug === 'alcaldia-a' ? 'ops.a@sj-sig.test' : 'ops.b@sj-sig.test',
+            'password' => Hash::make((string) env('SEED_PASSWORD', 'Sig2026!')),
+            'role' => UserRole::Operaciones,
+            'document_number' => $slug === 'alcaldia-a' ? '20000001' : '20000002',
+            'job_title' => 'Coordinador de operaciones',
             'tenant_id' => $tenant->id,
+            'contract_id' => $contract->id,
+            'is_active' => true,
+            'must_change_password' => false,
         ]);
 
         Novelty::query()->create([

@@ -9,7 +9,7 @@ final class ContractPolicy
 {
     public function view(User $user, Contract $contract): bool
     {
-        if ($user->role->isInternal() && $user->role === \App\Enums\UserRole::AdminEmpresa) {
+        if ($user->role->seesAllClients()) {
             return true;
         }
 

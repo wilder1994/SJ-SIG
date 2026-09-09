@@ -9,12 +9,28 @@
         </div>
         <nav class="nav">
             <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'is-on' : '' }}">Tablero</a>
-            <a href="{{ route('people.index') }}" class="{{ request()->routeIs('people.*') ? 'is-on' : '' }}">Personal</a>
-            <a href="{{ route('documents.index') }}" class="{{ request()->routeIs('documents.*') ? 'is-on' : '' }}">Documentos</a>
-            <a href="{{ route('parafiscals.index') }}" class="{{ request()->routeIs('parafiscals.*') ? 'is-on' : '' }}">Parafiscales</a>
-            <a href="{{ route('electronics.index') }}" class="{{ request()->routeIs('electronics.*') ? 'is-on' : '' }}">Electrónica</a>
-            <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'is-on' : '' }}">Servicios</a>
-            <a href="{{ route('novelties.index') }}" class="{{ request()->routeIs('novelties.*') ? 'is-on' : '' }}">Novedades</a>
+            @if(auth()->user()->role->canManageClients())
+                <a href="{{ route('clients.index') }}" class="{{ request()->routeIs('clients.*') ? 'is-on' : '' }}">Clientes</a>
+            @endif
+            @if(auth()->user()->role->canManageUsers())
+                <a href="{{ route('users.index') }}" class="{{ request()->routeIs('users.*') && ! request()->routeIs('users.photo') ? 'is-on' : '' }}">Usuarios</a>
+            @endif
+            @if(auth()->user()->role->canAccessHr())
+                <a href="{{ route('people.index') }}" class="{{ request()->routeIs('people.*') ? 'is-on' : '' }}">Personal</a>
+                <a href="{{ route('documents.index') }}" class="{{ request()->routeIs('documents.*') ? 'is-on' : '' }}">Documentos</a>
+                <a href="{{ route('parafiscals.index') }}" class="{{ request()->routeIs('parafiscals.*') ? 'is-on' : '' }}">Parafiscales</a>
+            @endif
+            @if(auth()->user()->role->canAccessElectronics())
+                <a href="{{ route('electronics.index') }}" class="{{ request()->routeIs('electronics.*') ? 'is-on' : '' }}">Electrónica</a>
+            @endif
+            @if(auth()->user()->role->canAccessHr())
+                <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'is-on' : '' }}">Servicios</a>
+                <a href="{{ route('novelties.index') }}" class="{{ request()->routeIs('novelties.*') ? 'is-on' : '' }}">Novedades</a>
+            @endif
+            @if(auth()->user()->role->canAccessOpsTeam() && $currentContract)
+                <a href="{{ route('operations.index') }}" class="{{ request()->routeIs('operations.*') ? 'is-on' : '' }}">Equipo SJ</a>
+            @endif
+            <a href="{{ route('profile.show') }}" class="{{ request()->routeIs('profile.*') ? 'is-on' : '' }}">Mi perfil</a>
         </nav>
         <form method="post" action="{{ route('logout') }}" style="margin-top:auto">
             @csrf
@@ -24,16 +40,16 @@
     <main class="stage">
         <header class="topbar">
             <div>
-                <div class="kicker">{{ $currentContract->tenant->name }}</div>
-                <h1 class="display" style="font-size:28px;margin:4px 0 0">{{ $currentContract->name }}</h1>
+                <div class="kicker">{{ $currentContract?->tenant?->name ?? 'SJ-SIG' }}</div>
+                <h1 class="display" style="font-size:28px;margin:4px 0 0">{{ $currentContract?->name ?? 'Sin cliente activo' }}</h1>
             </div>
             <div style="text-align:right">
                 <div class="muted">{{ auth()->user()->name }} · {{ auth()->user()->role->label() }}</div>
-                @if(($accessibleContracts ?? collect())->count() > 1 && auth()->user()->boundContractId() === null)
+                @if(($accessibleContracts ?? collect())->count() > 1 && auth()->user()->role->seesAllClients())
                     <form method="get" style="margin-top:8px">
                         <select name="contract" onchange="this.form.submit()">
                             @foreach($accessibleContracts as $item)
-                                <option value="{{ $item->id }}" @selected($item->id === $currentContract->id)>{{ $item->tenant->name }} — {{ $item->code }}</option>
+                                <option value="{{ $item->id }}" @selected($currentContract && $item->id === $currentContract->id)>{{ $item->tenant->name }}</option>
                             @endforeach
                         </select>
                     </form>

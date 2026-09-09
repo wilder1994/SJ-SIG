@@ -22,7 +22,7 @@
 
 @if($cargar)
 <article class="card" style="margin-bottom:12px">
-    <p class="kicker">Carga (operador)</p>
+    <p class="kicker">Carga (usuario interno)</p>
     <p class="muted" style="margin-bottom:10px">HV, certificados, actas de curso, certificados de EPS/pensión/caja y otros. Los títulos de curso se registran aquí.</p>
     <form method="post" action="{{ route('documents.courses.store', $person) }}" class="form-grid" style="margin-bottom:16px">
         @csrf

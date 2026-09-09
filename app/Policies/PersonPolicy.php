@@ -9,7 +9,7 @@ final class PersonPolicy
 {
     public function view(User $user, Person $person): bool
     {
-        if ($user->role === \App\Enums\UserRole::AdminEmpresa) {
+        if ($user->role->seesAllClients()) {
             return true;
         }
 

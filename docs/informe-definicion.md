@@ -67,35 +67,39 @@ Pendiente: texto exacto del Anexo 7.4 (casillas, plazos, URL, evidencias) y rest
 
 ```
 Empresa SJ (dueña de SJ-SIG)
-  └── Cliente / Entidad contratante     ← límite de confidencialidad (tenant)
-        └── Contrato
-              └── Puestos, personal, documentos, cursos,
-                  afiliaciones, parafiscales, activos electrónicos,
-                  mantenimientos, servicios, novedades
+  └── Cliente (tenant)     ← un universo; el supervisor se asigna aquí
+        └── Contrato 1:1 (interno, no se elige en pantalla)
+              └── Instalaciones / puestos (siguiente fase)
+              └── Personal, documentos, parafiscales, electrónica, servicios, novedades
 ```
+
+El usuario de **Operaciones** (jefe, coordinador, analista, patrulla) también va amarrado a **un cliente** y aparece en **Equipo SJ** para que la entidad vea quién de SJ está asignado. Gestión humana (`interno`) no sale en esa lista.
 
 ### Roles (v1)
 
 | Rol | Actor | Alcance |
 |-----|--------|---------|
-| `admin_empresa` | SJ | Configuración, usuarios, todos los clientes |
-| `operador` | SJ | Clientes asignados: **carga masiva de personal**, carga documental, cursos, servicios, novedades |
-| `tecnico_electronica` | Área de infraestructura SJ | Solo activos y mantenimientos de clientes asignados |
-| `supervisor_entidad` | Cliente (p. ej. Alcaldía / Contratación Pública) | Solo **su contrato**: consulta, tablero, novedades de seguimiento |
-| `consulta_entidad` | Auditoría / apoyo del cliente | Igual que supervisor, sin registrar novedades |
+| `admin_empresa` | SJ | Usuarios, clientes, toda la operación |
+| `interno` | Empleado SJ (GH / corporativo) | **Todos** los clientes. Carga Excel/PDF. No administra usuarios |
+| `operaciones` | Jefe, coordinador, analista, supervisor de patrulla | **Un cliente**. Visible en Equipo SJ. Consulta documental |
+| `tecnico_electronica` | Área de infraestructura SJ | Solo mantenimientos del cliente asignado |
+| `supervisor_entidad` | Usuario del cliente | Solo **su cliente**. Tablero, consulta, novedades |
+| `consulta_entidad` | Auditoría / apoyo del cliente | Igual que supervisor, sin novedades |
 
-Reglas de aislamiento a implementar (cuando haya código):
+Reglas de aislamiento:
 
-- `tenant_id` en tablas de negocio; `contract_id` en datos contractuales.
-- Global scope por tenant; policies sobre cada recurso y cada descarga.
-- Storage: `tenants/{tenant_id}/contracts/{contract_id}/...`
-- Prueba de aceptación: dos logins de supervisor, dos mundos; 403/404 al cruzar IDs.
+- `tenant_id` en tablas de negocio; contrato 1:1 por cliente (oculto en UI).
+- `interno` y `admin_empresa` ven todos los clientes (selector en el header).
+- Entidad, operaciones y técnico: un cliente; 404 al cruzar IDs.
+- Perfil de plataforma: solo lectura. Alta/edición de usuarios: solo Administración.
+- Storage: `tenants/{tenant_id}/contracts/{contract_id}/...` y `avatars/` (no se versionan).
+- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` (usuarios/clientes/equipo).
 
 ---
 
 ## 6. Carga masiva de personal
 
-Contratos de este tamaño (100–600 personas) no se digitán uno a uno. La alta de personal v1 es **importación Excel** ejecutada por `operador` / `admin_empresa` **dentro de un contrato ya seleccionado**. El archivo no elige cliente ni contrato.
+La alta de personal v1 es **importación Excel** ejecutada por `interno` / `admin_empresa` **dentro del cliente activo**. El archivo no elige cliente.
 
 ### Plantilla oficial v1
 
@@ -138,7 +142,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente: HV, certificados, cursos (título + fecha y actas PDF), afiliaciones PDF, otros. Supervisor: Ver/Descargar. Operador/admin: **Cargar documentos** (`?cargar=1`).
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente: HV, certificados, cursos (título + fecha y actas PDF), afiliaciones PDF, otros. Supervisor y operaciones: Ver/Descargar. Interno/admin: **Cargar documentos** (`?cargar=1`).
 
 La entidad no valida con el texto de la tabla: ve **PDF reales**, previsualizados in-app (`/documentos/archivo/{id}/ver`) y con descarga opcional.
 
@@ -158,27 +162,30 @@ Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** p
 
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
-| 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest`: personal + carpeta documental) |
-| 2 | Clientes, contratos, puestos | Seed / consulta; asignación persona↔puesto pendiente |
+| 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
+| 2 | Clientes + usuarios de plataforma | Hecho (alta de universo y cuentas). Instalaciones/puestos pendientes |
 | 3 | Personal + import Excel + gestor documental | Hecho: ficha vs carpeta (ver §6) |
-| 4 | Asignación persona ↔ puesto del contrato | Pendiente |
+| 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
 | 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
 | 8 | Servicios por puesto | Consulta seed |
 | 9 | Novedades de ejecución | Alta + listado |
 | 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero KPI; exportación PDF/Excel pendiente |
-| 11 | Usuarios demo A vs B | Hecho |
+| 11 | Usuarios demo A vs B + interno/ops | Hecho |
 
 ### Rutas de evidencia (v1)
 
 | Recurso | Listado | Carpeta / alta | Visor | Descarga |
 |---------|---------|----------------|-------|----------|
+| Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` | — | — |
+| Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
+| Equipo SJ | `GET /equipo` | — | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
 | Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
-Carga de PDF y cursos: `admin_empresa` y `operador` (`canUploadEvidence`). Entidad: Ver/Descargar.  
+Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
 
 ### Tablero (visión)
 
@@ -195,7 +202,7 @@ Carga de PDF y cursos: `admin_empresa` y `operador` (`canUploadEvidence`). Entid
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder` (inline vs attachment). Storage: `storage/app/tenants/...` (no se versiona).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -204,7 +211,7 @@ Local aislado:
 - LAN por IP (puerto **8086**, no usa `:80` de Armory): `http://172.16.16.70:8086` o `http://192.168.18.14:8086`
 - Vhost Apache: `00-aae-sj-sig.conf` (`Listen 8086` + `sj-sig.test` en 80/443). Recargar Apache en Laragon.
 - Base de datos propia: `sj_sig`
-- Demo: clave `Sig2026!` — `supervisor.a@sj-sig.test` vs `supervisor.b@sj-sig.test`
+- Demo: clave `Sig2026!` — `admin@sj-sig.test`, `interno@sj-sig.test`, `ops.a@sj-sig.test`, `supervisor.a@sj-sig.test` vs `supervisor.b@sj-sig.test`. Tras este corte: `php artisan migrate:fresh --seed`.
 
 ---
 
@@ -237,3 +244,4 @@ Local aislado:
 | 2026-09-08 | Paleta UI alineada al logo institucional (navy/azure/cian/plata), sin cambiar el diseño. |
 | 2026-09-08 | Alta unitaria, carga PDF (HV, certificados, afiliaciones, cursos, parafiscales) y visor in-app. |
 | 2026-09-08 | Separación Personal (ficha HR) vs Documentos (carpeta por vigilante). Cursos y PDF viven en Documentos. |
+| 2026-09-08 | Módulos Clientes y Usuarios. Rol `interno` (todos los clientes) y `operaciones` (un cliente, listado Equipo SJ). Perfil de solo lectura. Clave con ojito y cambio en primer ingreso. |

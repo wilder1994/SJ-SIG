@@ -18,11 +18,14 @@ Clave demo: `Sig2026!`
 
 | Correo | Rol |
 |--------|-----|
-| `admin@sj-sig.test` | Administración SJ |
-| `operador.a@sj-sig.test` | Operador (importación Excel) |
-| `tecnico@sj-sig.test` | Mantenimientos |
-| `supervisor.a@sj-sig.test` | Entidad A |
-| `supervisor.b@sj-sig.test` | Entidad B (universo distinto) |
+| `admin@sj-sig.test` | Administración (usuarios y clientes) |
+| `interno@sj-sig.test` | Usuario interno (todos los clientes, carga documental) |
+| `ops.a@sj-sig.test` | Operaciones cliente A (visible para la entidad) |
+| `tecnico@sj-sig.test` | Técnico (solo electrónica, cliente A) |
+| `supervisor.a@sj-sig.test` | Supervisor de cliente A |
+| `supervisor.b@sj-sig.test` | Supervisor de cliente B |
+
+El usuario **no edita su perfil**. Cambios: solo Administración. Primer ingreso de un alta nueva: cambio obligatorio de clave. Ojito para ver la clave en login y formularios. El correo `operador.a@sj-sig.test` quedó reemplazado por `interno@sj-sig.test`.
 
 ## Stack
 
@@ -45,9 +48,11 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran.
 
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
-| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha (identidad + EPS/pensión/caja/ARL en texto) | Operador / admin |
-| **Documentos** | Una carpeta por vigilante (HV, certificados, cursos, afiliaciones PDF, otros). Visor in-app | Operador / admin; entidad solo Ver/Descargar |
-| **Parafiscales** | PILA u soporte de **empresa** por periodo (no de la persona) | Operador / admin |
+| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
+| **Documentos** | Carpeta por vigilante. Visor in-app | Interno / admin cargan; entidad y operaciones consultan |
+| **Parafiscales** | PILA de empresa por periodo | Interno / admin |
+| **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
+| **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
 Flujo: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 

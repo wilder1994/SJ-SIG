@@ -1,12 +1,17 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ForcedPasswordController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\MaintenanceController;
 use App\Http\Controllers\NoveltyController;
+use App\Http\Controllers\OperationsTeamController;
 use App\Http\Controllers\ParafiscalController;
 use App\Http\Controllers\PersonController;
+use App\Http\Controllers\PlatformUserController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ServiceDeliveryController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,8 +26,26 @@ Route::post('/salida', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::middleware(['auth', 'contract.bound'])->group(function (): void {
+Route::middleware(['auth', 'user.active'])->group(function (): void {
+    Route::get('/clave', [ForcedPasswordController::class, 'edit'])->name('password.edit');
+    Route::post('/clave', [ForcedPasswordController::class, 'update'])->name('password.update');
+});
+
+Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 'contract.required', 'tech.modules'])->group(function (): void {
     Route::get('/tablero', DashboardController::class)->name('dashboard');
+    Route::get('/perfil', ProfileController::class)->name('profile.show');
+    Route::get('/usuarios/foto/{user}', [PlatformUserController::class, 'photo'])->name('users.photo');
+    Route::get('/clientes', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clientes/nuevo', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clientes', [ClientController::class, 'store'])->name('clients.store');
+    Route::get('/clientes/{client}/editar', [ClientController::class, 'edit'])->name('clients.edit');
+    Route::put('/clientes/{client}', [ClientController::class, 'update'])->name('clients.update');
+    Route::get('/usuarios', [PlatformUserController::class, 'index'])->name('users.index');
+    Route::get('/usuarios/nuevo', [PlatformUserController::class, 'create'])->name('users.create');
+    Route::post('/usuarios', [PlatformUserController::class, 'store'])->name('users.store');
+    Route::get('/usuarios/{user}/editar', [PlatformUserController::class, 'edit'])->name('users.edit');
+    Route::put('/usuarios/{user}', [PlatformUserController::class, 'update'])->name('users.update');
+    Route::get('/equipo', OperationsTeamController::class)->name('operations.index');
     Route::get('/personal', [PersonController::class, 'index'])->name('people.index');
     Route::get('/personal/nuevo', [PersonController::class, 'create'])->name('people.create');
     Route::post('/personal', [PersonController::class, 'store'])->name('people.store');

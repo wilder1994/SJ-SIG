@@ -21,6 +21,7 @@ final class BindCurrentContract
             abort(401);
         }
 
+        $accessible = $this->contracts->listAccessible($user);
         $requested = $request->integer('contract') ?: (int) $request->session()->get('current_contract_id', 0);
 
         if ($user->boundContractId() !== null) {
@@ -28,18 +29,26 @@ final class BindCurrentContract
         } elseif ($requested > 0) {
             $contract = $this->contracts->findAccessibleById($user, $requested);
         } else {
-            $contract = $this->contracts->listAccessible($user)->first();
+            $contract = $accessible->first();
         }
 
         if ($contract === null) {
-            abort(403, 'Sin contrato accesible.');
+            if ($user->role->seesAllClients()) {
+                $request->attributes->set('currentContract', null);
+                view()->share('currentContract', null);
+                view()->share('accessibleContracts', $accessible);
+
+                return $next($request);
+            }
+
+            abort(403, 'Sin cliente accesible.');
         }
 
         $contract->loadMissing('tenant');
         $request->session()->put('current_contract_id', $contract->id);
         $request->attributes->set('currentContract', $contract);
         view()->share('currentContract', $contract);
-        view()->share('accessibleContracts', $this->contracts->listAccessible($user));
+        view()->share('accessibleContracts', $accessible);
 
         return $next($request);
     }

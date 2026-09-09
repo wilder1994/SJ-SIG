@@ -11,8 +11,11 @@ final class DashboardController extends Controller
 {
     public function __invoke(Request $request, BuildContractDashboardService $dashboard): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
+        if (! $contract instanceof Contract) {
+            return view('dashboard.empty');
+        }
+
         $contract->loadMissing('tenant');
 
         return view('dashboard.index', [

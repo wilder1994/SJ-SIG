@@ -25,6 +25,17 @@ function openPreview(url, name) {
 }
 
 document.addEventListener('click', (event) => {
+    const toggle = event.target.closest('[data-password-toggle]');
+    if (toggle) {
+        event.preventDefault();
+        const wrap = toggle.closest('.password-wrap');
+        const input = wrap?.querySelector('input');
+        if (input) {
+            input.type = input.type === 'password' ? 'text' : 'password';
+            toggle.textContent = input.type === 'password' ? 'Ver' : 'Ocultar';
+        }
+        return;
+    }
     const trigger = event.target.closest('[data-preview]');
     if (trigger) {
         event.preventDefault();
@@ -43,3 +54,55 @@ document.addEventListener('keydown', (event) => {
         closePreview();
     }
 });
+
+const roleMetaNode = document.getElementById('role-meta');
+const roleSelect = document.getElementById('role-select');
+const permRow = document.getElementById('perm-row');
+const roleHint = document.getElementById('role-hint');
+const clientField = document.getElementById('client-field');
+const tenantSelect = document.getElementById('tenant-select');
+const photoInput = document.getElementById('photo-input');
+const photoPreview = document.getElementById('photo-preview');
+const photoIcon = document.getElementById('photo-icon');
+
+function renderRole() {
+    if (!roleMetaNode || !roleSelect || !permRow) {
+        return;
+    }
+    const meta = JSON.parse(roleMetaNode.textContent || '{}');
+    const current = meta[roleSelect.value];
+    if (!current) {
+        return;
+    }
+    permRow.innerHTML = current.permissions.map((item) => {
+        const on = item.on ? ' is-on' : '';
+        return `<span class="perm-chip${on}">${item.label}</span>`;
+    }).join('');
+    if (roleHint) {
+        roleHint.textContent = current.hint;
+    }
+    if (clientField && tenantSelect) {
+        const needs = current.requires_client;
+        clientField.style.display = needs ? '' : 'none';
+        tenantSelect.required = needs;
+        if (!needs) {
+            tenantSelect.value = '';
+        }
+    }
+}
+
+roleSelect?.addEventListener('change', renderRole);
+renderRole();
+
+photoInput?.addEventListener('change', () => {
+    const file = photoInput.files?.[0];
+    if (!file || !photoPreview) {
+        return;
+    }
+    photoPreview.src = URL.createObjectURL(file);
+    photoPreview.hidden = false;
+    if (photoIcon) {
+        photoIcon.hidden = true;
+    }
+});
+
