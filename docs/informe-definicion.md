@@ -169,7 +169,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
 - **Cargar documentos** abre un modal centrado con **una** tarjeta PDF → **Indexar**. En el lote se elige carpeta y tipo por grupo de páginas (un PDF puede alimentar varias carpetas).
-- Pantalla **Indexar lote**: dos columnas. Izquierda: carpeta + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF. Seleccionar páginas sueltas o un tramo con Shift+clic → carpeta → tipo → **Guardar** genera **un archivo por corte**.
+- Pantalla **Indexar lote**: dos columnas. Izquierda: carpeta + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF. Seleccionar páginas sueltas o un tramo con Shift+clic → carpeta → tipo → **Agregar a la lista** las quita del preview (Quitar las devuelve). **Guardar** genera **un archivo por corte**.
 - En la carpeta: foto circular (cámara para interno/admin), **Volver** al listado, tarjetas por carpeta (conteo `N de total`) y **Abrir** → modal con buscador, PDFs (Ver / Descargar; Eliminar solo 12 h) y pendientes (N/A).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
 
@@ -214,7 +214,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (foto + tarjetas + modal de carpeta; carga PDF en modal; N/A en pendientes) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas). Foto: `people.photo_path`, `StorePersonPhotoService`. Borrado: `DeletePersonDocumentService` (12 h).
+- UI: `documents/folder` (foto + tarjetas + modal de carpeta; carga PDF en modal; N/A en pendientes) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js; las páginas agregadas a la lista salen del preview). Foto: `people.photo_path`, `StorePersonPhotoService`. Borrado: `DeletePersonDocumentService` (12 h).
 - Rutas de lote: `POST/GET /documentos/carpeta/{person}/lote`, `GET .../lote/{batch}/ver`, `POST .../lote/{batch}`. El PDF vive en `.../lote/batches/{uuid}.pdf`. `document_batches.folder` queda null; la carpeta va en cada corte (`slices.*.folder`).
 - Sin cambiar el aislamiento por cliente/contrato.
 
@@ -428,6 +428,7 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Tope de carga 50 MB. LAN de demo: Wi‑Fi `sjsp.net` `http://172.16.23.47:8086/ingreso`. |
 | 2026-09-09 | LAN por cable: Ethernet `http://172.16.16.70:8086/ingreso`. |
 | 2026-09-09 | Foto circular del vigilante. Carpetas en tarjetas + modal (buscador). Conteo `N de total`. Eliminar PDF solo 12 h. Botón Volver (antes Listado). |
+| 2026-09-09 | Indexador: al agregar un corte, esas páginas salen del preview; Quitar las devuelve. |
 | 2026-09-09 | Otros indexados: tipo libre, máx. 20 por trabajador. Bloquea nombres que cruzan con las otras carpetas. |
 | 2026-09-09 | Un solo PDF para indexar (`/lote`): carpeta + tipo por corte. `document_batches.folder` nullable. Las 6 tarjetas de carga quedan en una. |
 | 2026-09-09 | Cargar documentos en modal centrado. N/A visible para interno/admin sin `?cargar=1`. |

@@ -9,7 +9,7 @@
             <p class="kicker">Expediente</p>
             <h2 class="display" style="font-size:22px;margin:4px 0 8px">Indexar lote</h2>
             <p class="muted">{{ $person->full_name }} · {{ $person->document_type }} {{ $person->document_number }}</p>
-            <p class="muted">{{ $batch->original_name }} · {{ $batch->page_count }} página{{ $batch->page_count === 1 ? '' : 's' }}</p>
+            <p class="muted">{{ $batch->original_name }} · <span id="pages-remaining">{{ $batch->page_count }} página{{ $batch->page_count === 1 ? '' : 's' }}</span></p>
             <p class="muted" style="margin-top:8px">Marque las páginas (clic; Shift+clic para un tramo). Elija carpeta y tipo, luego agrégalo a la lista. Un mismo PDF puede ir a varias carpetas.</p>
         </article>
 
@@ -57,7 +57,7 @@
     </div>
 
     <article class="card index-pages">
-        <p class="kicker">Páginas del lote</p>
+        <p class="kicker">Páginas por indexar</p>
         <div class="index-pages-scroll">
             <div class="page-thumbs" id="page-thumbs">
                 @for($page = 1; $page <= $batch->page_count; $page++)

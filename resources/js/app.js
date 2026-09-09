@@ -404,6 +404,8 @@ document.addEventListener('click', (event) => {
     const meta = JSON.parse(metaNode.textContent || '{}');
     const catalogs = meta.catalogs || [];
     const selected = new Set();
+    const assigned = new Set();
+    const totalPages = Number(meta.page_count) || thumbs.querySelectorAll('.page-thumb').length;
     let lastPage = null;
     let sliceCount = 0;
 
@@ -501,18 +503,29 @@ document.addEventListener('click', (event) => {
     function paintSelection() {
         thumbs.querySelectorAll('.page-thumb').forEach((card) => {
             const page = Number(card.getAttribute('data-page'));
-            const on = selected.has(page);
+            const used = assigned.has(page);
+            card.hidden = used;
+            const on = !used && selected.has(page);
             card.classList.toggle('is-on', on);
             const hit = card.querySelector('.page-thumb-hit');
             if (hit) {
                 hit.setAttribute('aria-pressed', on ? 'true' : 'false');
             }
         });
+        const left = Math.max(0, totalPages - assigned.size);
+        const remaining = document.getElementById('pages-remaining');
+        if (remaining) {
+            remaining.textContent = assigned.size === 0
+                ? `${totalPages} página${totalPages === 1 ? '' : 's'}`
+                : `${left} restante${left === 1 ? '' : 's'} de ${totalPages}`;
+        }
         if (hint) {
             const pages = selectedPages();
             hint.textContent = pages.length
                 ? 'Seleccionadas: ' + pages.join(', ') + '.'
-                : 'Ninguna página seleccionada.';
+                : (left === 0 && assigned.size > 0
+                    ? 'Todas las páginas están en la lista.'
+                    : 'Ninguna página seleccionada.');
         }
     }
 
@@ -520,7 +533,9 @@ document.addEventListener('click', (event) => {
         const start = Math.min(from, to);
         const end = Math.max(from, to);
         for (let page = start; page <= end; page += 1) {
-            selected.add(page);
+            if (!assigned.has(page)) {
+                selected.add(page);
+            }
         }
     }
 
@@ -533,6 +548,9 @@ document.addEventListener('click', (event) => {
             return;
         }
         const page = Number(hit.getAttribute('data-page'));
+        if (assigned.has(page)) {
+            return;
+        }
         if (event.shiftKey && lastPage !== null) {
             toggleRange(lastPage, page);
         } else if (selected.has(page)) {
@@ -626,7 +644,19 @@ document.addEventListener('click', (event) => {
             ? ` · ${providerInput.value.trim()} · ${takenOnInput.value}`
             : '';
         wrap.querySelector('[data-slice-name]').textContent = nameInput.value + extra;
-        wrap.querySelector('[data-remove-slice]')?.addEventListener('click', () => wrap.remove());
+        wrap.dataset.pages = pages.join(',');
+        wrap.querySelector('[data-remove-slice]')?.addEventListener('click', () => {
+            (wrap.dataset.pages || '').split(',').forEach((item) => {
+                const page = Number(item);
+                if (page > 0) {
+                    assigned.delete(page);
+                }
+            });
+            wrap.remove();
+            lastPage = null;
+            paintSelection();
+        });
+        pages.forEach((page) => assigned.add(page));
         rows.appendChild(wrap);
         wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         selected.clear();
