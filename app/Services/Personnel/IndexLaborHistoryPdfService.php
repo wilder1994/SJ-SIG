@@ -6,6 +6,7 @@ use App\Enums\AffiliationDocumentType;
 use App\Enums\CertificateDocumentType;
 use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
+use App\Enums\OtherDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\Course;
@@ -21,7 +22,7 @@ use setasign\Fpdi\Fpdi;
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string}>  $slices
+     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -39,7 +40,7 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string} $slice */
+    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
         $pages = $this->normalizePages($slice['pages'], $batch->page_count);
@@ -62,8 +63,12 @@ final class IndexLaborHistoryPdfService
         if (! str_ends_with(strtolower($name), '.pdf')) {
             $name .= '.pdf';
         }
+        $label = trim((string) ($slice['tipo'] ?? ''));
+        if ($label === '') {
+            $label = $name;
+        }
 
-        $repeatable = $slice['type'] instanceof CourseDocumentType && $slice['type']->isRepeatable();
+        $repeatable = method_exists($slice['type'], 'isRepeatable') && $slice['type']->isRepeatable();
         if (! $repeatable) {
             Course::query()
                 ->where('person_id', $person->id)
@@ -81,7 +86,7 @@ final class IndexLaborHistoryPdfService
             'person_id' => $person->id,
             'folder' => $folder,
             'document_type' => $slice['type']->value,
-            'display_name' => $name,
+            'display_name' => $label,
             'page_from' => $pages[0],
             'page_to' => $pages[array_key_last($pages)],
             'pages' => $pages,

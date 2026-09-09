@@ -31,13 +31,13 @@ enum DocumentFolder: string
             self::Certificados => 'Checklist indexado: examen médico de ingreso, psicofísico y psicosensométrico. Subir PDF y asignar tipo a cada página.',
             self::Cursos => 'Catálogo Superintendencia + otro. Cada acta lleva fecha y entidad que dicta el curso.',
             self::Afiliaciones => 'Afiliaciones que hace la empresa al contratar. Subir PDF y asignar tipo a cada página.',
-            self::Otros => 'Cédula, foto, RUT u otro soporte que no cabe arriba.',
+            self::Otros => 'Soportes que no caben arriba. Escriba el tipo; máximo 20 por trabajador. No use un tipo de otra carpeta.',
         };
     }
 
     public function isIndexed(): bool
     {
-        return $this !== self::Otros;
+        return true;
     }
 
     public function batchRoute(): ?string
@@ -48,7 +48,7 @@ enum DocumentFolder: string
             self::Certificados => 'documents.certificates.batch',
             self::Cursos => 'documents.courses.batch',
             self::Afiliaciones => 'documents.affiliations.batch',
-            default => null,
+            self::Otros => 'documents.others.batch',
         };
     }
 
@@ -60,7 +60,7 @@ enum DocumentFolder: string
             self::Certificados => 'documents.certificates.index',
             self::Cursos => 'documents.courses.index',
             self::Afiliaciones => 'documents.affiliations.index',
-            default => null,
+            self::Otros => 'documents.others.index',
         };
     }
 
@@ -72,7 +72,7 @@ enum DocumentFolder: string
             self::Certificados => 'documents.certificates.store',
             self::Cursos => 'documents.courses.store',
             self::Afiliaciones => 'documents.affiliations.store',
-            default => null,
+            self::Otros => 'documents.others.store',
         };
     }
 
@@ -84,7 +84,7 @@ enum DocumentFolder: string
             self::Certificados => 'documents.certificates.preview',
             self::Cursos => 'documents.courses.preview',
             self::Afiliaciones => 'documents.affiliations.preview',
-            default => null,
+            self::Otros => 'documents.others.preview',
         };
     }
 
@@ -96,7 +96,7 @@ enum DocumentFolder: string
             self::Certificados => 'documents.certificates.na',
             self::Cursos => 'documents.courses.na',
             self::Afiliaciones => 'documents.affiliations.na',
-            default => null,
+            self::Otros => null,
         };
     }
 }

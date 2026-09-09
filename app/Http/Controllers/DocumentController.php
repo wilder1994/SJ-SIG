@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Enums\DocumentFolder;
+use App\Enums\OtherDocumentType;
+use App\Support\Personnel\OtherSupportNamer;
 use App\Http\Requests\Personnel\IndexLaborHistoryRequest;
 use App\Http\Requests\Personnel\MarkLaborHistoryNaRequest;
 use App\Http\Requests\Personnel\StoreLaborHistoryBatchRequest;
@@ -161,6 +163,19 @@ final class DocumentController extends Controller
         return redirect()->route('documents.contracting.index', ['person' => $model, 'batch' => $batch]);
     }
 
+    public function storeOtherBatch(StoreLaborHistoryBatchRequest $request, int $person): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $model = $this->personInContract($request, $person);
+        $file = $request->file('file');
+        abort_if($file === null, 422);
+
+        $batch = $this->historyBatch->execute($contract, $model, $file, DocumentFolder::Otros);
+
+        return redirect()->route('documents.others.index', ['person' => $model, 'batch' => $batch]);
+    }
+
     public function historyIndex(Request $request, int $person, int $batch): View
     {
         return $this->showIndexer($request, $person, $batch, DocumentFolder::HojaVida);
@@ -186,6 +201,11 @@ final class DocumentController extends Controller
         return $this->showIndexer($request, $person, $batch, DocumentFolder::Contratacion);
     }
 
+    public function otherIndex(Request $request, int $person, int $batch): View
+    {
+        return $this->showIndexer($request, $person, $batch, DocumentFolder::Otros);
+    }
+
     public function storeHistoryIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
     {
         return $this->persistIndex($request, $person, $batch, DocumentFolder::HojaVida);
@@ -209,6 +229,11 @@ final class DocumentController extends Controller
     public function storeContractingIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
     {
         return $this->persistIndex($request, $person, $batch, DocumentFolder::Contratacion);
+    }
+
+    public function storeOtherIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
+    {
+        return $this->persistIndex($request, $person, $batch, DocumentFolder::Otros);
     }
 
     public function markHistoryNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
@@ -261,6 +286,11 @@ final class DocumentController extends Controller
         return $this->streamBatch($request, $person, $batch, DocumentFolder::Contratacion);
     }
 
+    public function previewOtherBatch(Request $request, int $person, int $batch): StreamedResponse
+    {
+        return $this->streamBatch($request, $person, $batch, DocumentFolder::Otros);
+    }
+
     public function preview(Request $request, int $document): StreamedResponse
     {
         $file = $this->locate($request, $document);
@@ -296,6 +326,12 @@ final class DocumentController extends Controller
                 'page_count' => $lote->page_count,
                 'preview_url' => $preview,
                 'course_fields' => $folder === DocumentFolder::Cursos,
+                'other_fields' => $folder === DocumentFolder::Otros,
+                'other_type' => OtherDocumentType::Otro->value,
+                'name_suffix' => OtherSupportNamer::suffix($model),
+                'reserved' => OtherSupportNamer::reserved($model),
+                'existing_count' => OtherSupportNamer::loadedCount($model),
+                'max_others' => OtherDocumentType::MAX,
                 'types' => collect(IndexedFolder::types($folder))->map(fn ($type) => [
                     'value' => $type->value,
                     'label' => $type->label(),
@@ -329,6 +365,7 @@ final class DocumentController extends Controller
                 'pages' => $pages,
                 'taken_on' => $row['taken_on'] ?? null,
                 'provider' => $row['provider'] ?? null,
+                'tipo' => $row['tipo'] ?? null,
             ];
         }
 

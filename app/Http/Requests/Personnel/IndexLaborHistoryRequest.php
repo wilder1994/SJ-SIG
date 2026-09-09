@@ -3,8 +3,10 @@
 namespace App\Http\Requests\Personnel;
 
 use App\Enums\DocumentFolder;
+use App\Enums\OtherDocumentType;
 use App\Models\DocumentBatch;
 use App\Support\Personnel\IndexedFolder;
+use App\Support\Personnel\OtherSupportNamer;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
 use InvalidArgumentException;
@@ -23,6 +25,7 @@ final class IndexLaborHistoryRequest extends FormRequest
             'slices' => ['required', 'array', 'min:1'],
             'slices.*.document_type' => ['required', 'string'],
             'slices.*.display_name' => ['required', 'string', 'max:180'],
+            'slices.*.tipo' => ['nullable', 'string', 'max:80'],
             'slices.*.pages' => ['required', 'array', 'min:1'],
             'slices.*.pages.*' => ['required', 'integer', 'min:1'],
             'slices.*.taken_on' => ['nullable', 'date'],
@@ -33,8 +36,10 @@ final class IndexLaborHistoryRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator): void {
-            $batch = DocumentBatch::query()->find((int) $this->route('batch'));
+            $batch = DocumentBatch::query()->with('person.documents')->find((int) $this->route('batch'));
             $folder = $batch?->folder;
+            $person = $batch?->person;
+            $seenTipos = [];
             foreach ($this->input('slices', []) as $index => $slice) {
                 $pages = array_map('intval', $slice['pages'] ?? []);
                 if ($pages !== array_values(array_unique($pages))) {
@@ -54,6 +59,47 @@ final class IndexLaborHistoryRequest extends FormRequest
                     if (blank($slice['provider'] ?? null)) {
                         $validator->errors()->add('slices.'.$index.'.provider', 'La entidad que dicta el curso es obligatoria.');
                     }
+                }
+                if ($folder !== DocumentFolder::Otros || $person === null) {
+                    continue;
+                }
+
+                $tipo = trim((string) ($slice['tipo'] ?? ''));
+                if ($tipo === '') {
+                    $validator->errors()->add('slices.'.$index.'.tipo', 'Digite el tipo del soporte.');
+
+                    continue;
+                }
+
+                $tipoKey = OtherSupportNamer::normalize($tipo);
+                if ($tipoKey !== '' && isset($seenTipos[$tipoKey])) {
+                    $validator->errors()->add('slices.'.$index.'.tipo', 'Ese tipo ya está en la lista. Cámbielo para no repetirlo.');
+                }
+                $seenTipos[$tipoKey] = true;
+
+                $name = (string) ($slice['display_name'] ?? '');
+                $conflict = OtherSupportNamer::conflict($tipo, $name, $person);
+                if ($conflict !== null) {
+                    $validator->errors()->add(
+                        'slices.'.$index.'.tipo',
+                        'Ese tipo o nombre coincide con '.$conflict['folder'].' ('.$conflict['label'].'). Cámbielo o cárguelo en esa carpeta.',
+                    );
+                }
+
+                foreach ($person->documents as $existing) {
+                    if ($existing->folder !== DocumentFolder::Otros || ! $existing->hasFile()) {
+                        continue;
+                    }
+                    if (OtherSupportNamer::normalize((string) $existing->display_name) === $tipoKey) {
+                        $validator->errors()->add('slices.'.$index.'.tipo', 'Ya hay un soporte con ese tipo. Cámbielo o use otro nombre.');
+                    }
+                }
+            }
+
+            if ($folder === DocumentFolder::Otros && $person !== null) {
+                $incoming = count($this->input('slices', []));
+                if (OtherSupportNamer::loadedCount($person) + $incoming > OtherDocumentType::MAX) {
+                    $validator->errors()->add('slices', 'Solo se permiten '.OtherDocumentType::MAX.' soportes en Otros por trabajador.');
                 }
             }
         });

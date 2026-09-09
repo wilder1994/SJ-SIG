@@ -83,6 +83,10 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/documentos/carpeta/{person}/cursos/{batch}/ver', [DocumentController::class, 'previewCourseBatch'])->name('documents.courses.preview');
     Route::post('/documentos/carpeta/{person}/cursos/{batch}', [DocumentController::class, 'storeCourseIndex'])->name('documents.courses.store');
     Route::post('/documentos/carpeta/{person}/cursos-na', [DocumentController::class, 'markCourseNa'])->name('documents.courses.na');
+    Route::post('/documentos/carpeta/{person}/otros', [DocumentController::class, 'storeOtherBatch'])->name('documents.others.batch');
+    Route::get('/documentos/carpeta/{person}/otros/{batch}', [DocumentController::class, 'otherIndex'])->name('documents.others.index');
+    Route::get('/documentos/carpeta/{person}/otros/{batch}/ver', [DocumentController::class, 'previewOtherBatch'])->name('documents.others.preview');
+    Route::post('/documentos/carpeta/{person}/otros/{batch}', [DocumentController::class, 'storeOtherIndex'])->name('documents.others.store');
     Route::get('/documentos/archivo/{document}/ver', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documentos/archivo/{document}/descarga', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('/parafiscales', [ParafiscalController::class, 'index'])->name('parafiscals.index');

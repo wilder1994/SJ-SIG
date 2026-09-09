@@ -8,6 +8,7 @@ use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Enums\OtherDocumentType;
 use InvalidArgumentException;
 
 final class IndexedFolder
@@ -17,7 +18,7 @@ final class IndexedFolder
         return $folder->isIndexed();
     }
 
-    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType> */
+    /** @return list<LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType> */
     public static function types(DocumentFolder $folder): array
     {
         return match ($folder) {
@@ -26,11 +27,11 @@ final class IndexedFolder
             DocumentFolder::Afiliaciones => AffiliationDocumentType::cases(),
             DocumentFolder::Certificados => CertificateDocumentType::cases(),
             DocumentFolder::Cursos => CourseDocumentType::cases(),
-            default => [],
+            DocumentFolder::Otros => OtherDocumentType::cases(),
         };
     }
 
-    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType
+    public static function resolve(DocumentFolder $folder, string $value): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType
     {
         $type = match ($folder) {
             DocumentFolder::HojaVida => LaborHistoryDocumentType::tryFrom($value),
@@ -38,7 +39,7 @@ final class IndexedFolder
             DocumentFolder::Afiliaciones => AffiliationDocumentType::tryFrom($value),
             DocumentFolder::Certificados => CertificateDocumentType::tryFrom($value),
             DocumentFolder::Cursos => CourseDocumentType::tryFrom($value),
-            default => null,
+            DocumentFolder::Otros => OtherDocumentType::tryFrom($value),
         };
 
         if ($type === null) {

@@ -23,7 +23,7 @@
 @if($cargar)
 <section class="upload-deck" style="margin-bottom:12px">
     <p class="kicker">Carga (usuario interno)</p>
-    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Historia Laboral, Contratación, Certificados, Cursos y capacitación y Afiliaciones pasan al indexador. El escáner queda pendiente.</p>
+    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Todas las carpetas pasan al indexador (PDF). El escáner queda pendiente.</p>
     <div class="drop-grid">
         @foreach(\App\Enums\DocumentFolder::cases() as $folder)
             @continue(! $folder->isIndexed())
@@ -95,12 +95,19 @@
             <div class="history-head" @if(! $loop->first) style="margin-top:16px" @endif>
                 <div>
                     <p style="margin:0;font-weight:500">{{ $block['folder']->label() }}</p>
-                    <p class="muted">{{ $block['summary']['loaded'] }}/{{ $block['summary']['total'] }} indexados · {{ $block['summary']['required_loaded'] }}/{{ $block['summary']['required'] }} obligatorios</p>
+                    @if($block['folder'] === \App\Enums\DocumentFolder::Otros)
+                        <p class="muted">{{ $block['summary']['loaded'] }}/{{ $block['summary']['total'] }} soportes</p>
+                    @else
+                        <p class="muted">{{ $block['summary']['loaded'] }}/{{ $block['summary']['total'] }} indexados · {{ $block['summary']['required_loaded'] }}/{{ $block['summary']['required'] }} obligatorios</p>
+                    @endif
                 </div>
                 <button class="btn ghost" type="button" data-toggle-panel="{{ $block['panel'] }}">Listado</button>
             </div>
             <div id="{{ $block['panel'] }}" hidden>
-                @php $isCourse = $block['folder'] === \App\Enums\DocumentFolder::Cursos; @endphp
+                @php
+                    $isCourse = $block['folder'] === \App\Enums\DocumentFolder::Cursos;
+                    $isOther = $block['folder'] === \App\Enums\DocumentFolder::Otros;
+                @endphp
                 <table class="data" style="margin-top:10px">
                     <thead>
                         <tr>
@@ -117,12 +124,14 @@
                     @foreach($block['rows'] as $row)
                         <tr>
                             <td>
-                                @if($isCourse && $row['document'] && method_exists($row['type'], 'isRepeatable') && $row['type']->isRepeatable())
+                                @if(($isCourse || $isOther) && $row['document'] && method_exists($row['type'], 'isRepeatable') && $row['type']->isRepeatable())
                                     {{ $row['document']->label() }}
                                 @else
                                     {{ $row['type']->label() }}
                                 @endif
-                                <span class="muted"> · {{ $row['type']->requirement()->label() }}</span>
+                                @unless($isOther)
+                                    <span class="muted"> · {{ $row['type']->requirement()->label() }}</span>
+                                @endunless
                             </td>
                             @if($isCourse)
                                 <td>{{ $row['document']?->provider ?: '—' }}</td>
@@ -158,22 +167,6 @@
             </div>
         @endforeach
 
-        @foreach(\App\Enums\DocumentFolder::cases() as $folder)
-            @continue($folder->isIndexed())
-            <p style="margin:16px 0 4px;font-weight:500">{{ $folder->label() }}</p>
-            @php $files = $person->documents->filter(fn ($doc) => $doc->folder === $folder); @endphp
-            @forelse($files as $file)
-                <div class="file-row">
-                    <span>{{ $file->original_name }}</span>
-                    <span>
-                        <button class="btn ghost" type="button" data-preview="{{ route('documents.preview', $file) }}" data-name="{{ $file->original_name }}">Ver</button>
-                        <a class="btn ghost" href="{{ route('documents.download', $file) }}">Descargar</a>
-                    </span>
-                </div>
-            @empty
-                <p class="muted">Vacía</p>
-            @endforelse
-        @endforeach
     </article>
 </section>
 @endsection

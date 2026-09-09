@@ -23,6 +23,7 @@ final class StorePersonDocumentRequest extends FormRequest
                 DocumentFolder::Certificados,
                 DocumentFolder::Cursos,
                 DocumentFolder::Afiliaciones,
+                DocumentFolder::Otros,
             ])],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:51200'],
             'expires_on' => ['nullable', 'date'],

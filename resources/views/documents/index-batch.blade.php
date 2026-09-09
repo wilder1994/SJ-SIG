@@ -10,7 +10,7 @@
             <h2 class="display" style="font-size:22px;margin:4px 0 8px">Indexar lote</h2>
             <p class="muted">{{ $person->full_name }} · {{ $person->document_type }} {{ $person->document_number }}</p>
             <p class="muted">{{ $batch->original_name }} · {{ $batch->page_count }} página{{ $batch->page_count === 1 ? '' : 's' }}</p>
-            <p class="muted" style="margin-top:8px">Marque las páginas que forman un documento (pueden no ser consecutivas). Clic para seleccionar; Shift+clic para un tramo. Luego asigne tipo y agrégalo a la lista.</p>
+            <p class="muted" style="margin-top:8px">Marque las páginas que forman un documento (pueden no ser consecutivas). Clic para seleccionar; Shift+clic para un tramo. Luego asigne tipo y agrégalo a la lista.@if($historyMeta['other_fields'] ?? false) En Otros escriba el tipo; el nombre se arma con el tipo, la cédula y el nombre. No use un tipo de otra carpeta.@endif</p>
         </article>
 
         <article class="card index-composer">
@@ -18,8 +18,14 @@
                 @csrf
                 <div class="index-composer-form">
                     <p class="muted" id="page-hint">Ninguna página seleccionada.</p>
-                    <label class="field">Tipo para la selección
+                    @if($errors->any())
+                        <p class="muted" style="color:#b42318">{{ $errors->first() }}</p>
+                    @endif
+                    <label class="field" @if($historyMeta['other_fields'] ?? false) hidden @endif>Tipo para la selección
                         <select id="slice-type"></select>
+                    </label>
+                    <label class="field" @if(! ($historyMeta['other_fields'] ?? false)) hidden @endif>Tipo
+                        <input id="slice-tipo" maxlength="80" placeholder="Ej. RUT Cámara de Comercio">
                     </label>
                     <label class="field">Nombre
                         <input id="slice-name" required>

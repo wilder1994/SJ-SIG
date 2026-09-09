@@ -8,7 +8,9 @@ use App\Enums\ContractingDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Enums\OtherDocumentType;
 use App\Models\DocumentBatch;
+use App\Support\Personnel\OtherSupportNamer;
 use App\Models\Person;
 use App\Models\PersonDocument;
 use App\Models\User;
@@ -38,6 +40,7 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('1/3 indexados')
             ->assertSee('1/25 indexados')
             ->assertSee('3/8 indexados')
+            ->assertSee('0/20 soportes')
             ->assertDontSee('Subir PDF');
 
         $this->actingAs($supervisor)
@@ -58,6 +61,10 @@ final class LaborHistoryIndexingTest extends TestCase
 
         $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/cursos')
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
+            ->post('/documentos/carpeta/'.$person->id.'/otros')
             ->assertForbidden();
     }
 
@@ -349,5 +356,101 @@ final class LaborHistoryIndexingTest extends TestCase
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
             ->assertSee('2/25 indexados');
+    }
+
+    public function test_internal_user_can_index_other_support_pages(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $tipo = 'RUT Camara de Comercio';
+        $name = OtherSupportNamer::suggestedName($tipo, $person);
+
+        $path = storage_path('framework/testing/otros-lote.pdf');
+        SimplePdf::writePages($path, ['Pagina RUT']);
+        $file = new UploadedFile($path, 'otros.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/otros', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Otros)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
+            ->assertOk()
+            ->assertSee('Otros')
+            ->assertSee('escriba el tipo');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => OtherDocumentType::Otro->value,
+                    'tipo' => $tipo,
+                    'display_name' => $name,
+                    'pages' => [1],
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseHas('person_documents', [
+            'person_id' => $person->id,
+            'folder' => DocumentFolder::Otros->value,
+            'document_type' => OtherDocumentType::Otro->value,
+            'display_name' => $tipo,
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('1/20 soportes')
+            ->assertSee($tipo);
+    }
+
+    public function test_other_support_rejects_catalog_name(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $tipo = 'Contrato de trabajo';
+
+        $path = storage_path('framework/testing/otros-cruzado.pdf');
+        SimplePdf::writePages($path, ['Pagina contrato']);
+        $file = new UploadedFile($path, 'otros.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/otros', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Otros)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->from('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
+            ->post('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => OtherDocumentType::Otro->value,
+                    'tipo' => $tipo,
+                    'display_name' => OtherSupportNamer::suggestedName($tipo, $person),
+                    'pages' => [1],
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
+            ->assertSessionHasErrors('slices.0.tipo');
     }
 }

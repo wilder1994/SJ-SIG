@@ -272,6 +272,7 @@ document.addEventListener('click', (event) => {
     const thumbs = document.getElementById('page-thumbs');
     const hint = document.getElementById('page-hint');
     const typeSelect = document.getElementById('slice-type');
+    const tipoInput = document.getElementById('slice-tipo');
     const nameInput = document.getElementById('slice-name');
     const takenOnInput = document.getElementById('slice-taken-on');
     const providerInput = document.getElementById('slice-provider');
@@ -285,11 +286,53 @@ document.addEventListener('click', (event) => {
     let lastPage = null;
     let sliceCount = 0;
 
-    typeSelect.innerHTML = types.map((type) => (
-        `<option value="${type.value}">${type.label} (${type.req})</option>`
-    )).join('');
+    if (meta.other_fields) {
+        typeSelect.innerHTML = `<option value="${meta.other_type}">Otro soporte</option>`;
+    } else {
+        typeSelect.innerHTML = types.map((type) => (
+            `<option value="${type.value}">${type.label} (${type.req})</option>`
+        )).join('');
+    }
+
+    function slugTipo(text) {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^A-Za-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '')
+            .slice(0, 40);
+    }
+
+    function normalizeKey(text) {
+        return text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/\.pdf$/i, '')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_|_$/g, '');
+    }
+
+    function reservedHit(tipo, name) {
+        const suffix = meta.name_suffix || '';
+        const base = name.replace(/\.pdf$/i, '');
+        const stem = suffix && base.endsWith(suffix) ? base.slice(0, -suffix.length) : base;
+        const needles = [normalizeKey(tipo), normalizeKey(name), normalizeKey(stem)].filter(Boolean);
+        for (const reserved of meta.reserved || []) {
+            for (const needle of needles) {
+                for (const key of ['slug', 'label_slug', 'value', 'name']) {
+                    const token = reserved[key] || '';
+                    if (token && (needle === token || needle.startsWith(`${token}_`))) {
+                        return reserved;
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     function syncName() {
+        if (meta.other_fields) {
+            const slug = slugTipo(tipoInput?.value || '');
+            nameInput.value = slug ? slug + (meta.name_suffix || '') : '';
+            return;
+        }
         const chosen = types.find((type) => type.value === typeSelect.value);
         if (chosen) {
             nameInput.value = chosen.name;
@@ -297,6 +340,7 @@ document.addEventListener('click', (event) => {
     }
 
     typeSelect.addEventListener('change', syncName);
+    tipoInput?.addEventListener('input', syncName);
     syncName();
 
     function selectedPages() {
@@ -351,7 +395,8 @@ document.addEventListener('click', (event) => {
 
     function addSlice() {
         const pages = selectedPages();
-        const chosen = types.find((type) => type.value === typeSelect.value);
+        const chosen = types.find((type) => type.value === typeSelect.value)
+            || (meta.other_fields ? { value: meta.other_type, label: (tipoInput?.value || '').trim() } : null);
         if (!chosen || pages.length === 0) {
             if (hint) {
                 hint.textContent = 'Seleccione al menos una página antes de agregar.';
@@ -364,6 +409,28 @@ document.addEventListener('click', (event) => {
             }
             return;
         }
+        if (meta.other_fields) {
+            const tipo = (tipoInput?.value || '').trim();
+            if (!tipo) {
+                if (hint) {
+                    hint.textContent = 'Digite el tipo del soporte.';
+                }
+                return;
+            }
+            if ((meta.existing_count || 0) + rows.children.length + 1 > (meta.max_others || 20)) {
+                if (hint) {
+                    hint.textContent = `Solo se permiten ${meta.max_others || 20} soportes en Otros por trabajador.`;
+                }
+                return;
+            }
+            const clash = reservedHit(tipo, nameInput.value);
+            if (clash) {
+                if (hint) {
+                    hint.textContent = `Ese tipo o nombre coincide con ${clash.folder} (${clash.label}). Cámbielo o cárguelo en esa carpeta.`;
+                }
+                return;
+            }
+        }
         const index = sliceCount;
         sliceCount += 1;
         const wrap = document.createElement('div');
@@ -372,9 +439,13 @@ document.addEventListener('click', (event) => {
         const courseInputs = meta.course_fields
             ? `<input type="hidden" name="slices[${index}][taken_on]" value="${takenOnInput.value}"><input type="hidden" name="slices[${index}][provider]">`
             : '';
+        const tipoField = meta.other_fields
+            ? `<input type="hidden" name="slices[${index}][tipo]" value="">`
+            : '';
         wrap.innerHTML = `
             ${pageInputs}
             ${courseInputs}
+            ${tipoField}
             <input type="hidden" name="slices[${index}][document_type]" value="${chosen.value}">
             <input type="hidden" name="slices[${index}][display_name]">
             <div>
@@ -388,7 +459,12 @@ document.addEventListener('click', (event) => {
         if (meta.course_fields) {
             wrap.querySelector('input[name$="[provider]"]').value = providerInput.value.trim();
         }
-        wrap.querySelector('[data-slice-label]').textContent = chosen.label;
+        if (meta.other_fields) {
+            wrap.querySelector('input[name$="[tipo]"]').value = (tipoInput?.value || '').trim();
+        }
+        wrap.querySelector('[data-slice-label]').textContent = meta.other_fields
+            ? (tipoInput?.value || '').trim()
+            : chosen.label;
         const extra = meta.course_fields
             ? ` · ${providerInput.value.trim()} · ${takenOnInput.value}`
             : '';
