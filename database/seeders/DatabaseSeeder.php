@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\DocumentFolder;
+use App\Enums\LaborHistoryDocumentType;
 use App\Enums\ElectronicAssetKind;
 use App\Enums\NoveltyStatus;
 use App\Enums\UserRole;
@@ -267,10 +268,15 @@ final class DatabaseSeeder extends Seeder
         );
         $absolute = storage_path('app/'.$relative);
         SimplePdf::write($absolute, $title, $body);
+        $historyType = $folder === DocumentFolder::HojaVida ? LaborHistoryDocumentType::HojaVida : null;
+        $display = $historyType?->suggestedName($person);
+
         PersonDocument::query()->create([
             'tenant_id' => $tenantId,
             'person_id' => $person->id,
             'folder' => $folder,
+            'document_type' => $historyType,
+            'display_name' => $display,
             'original_name' => $filename,
             'disk_path' => $relative,
             'mime' => 'application/pdf',

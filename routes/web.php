@@ -58,6 +58,10 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/documentos', [DocumentController::class, 'index'])->name('documents.index');
     Route::get('/documentos/carpeta/{person}', [DocumentController::class, 'folder'])->name('documents.folder');
     Route::post('/documentos/carpeta/{person}', [DocumentController::class, 'store'])->name('documents.store');
+    Route::post('/documentos/carpeta/{person}/historia', [DocumentController::class, 'storeHistoryBatch'])->name('documents.history.batch');
+    Route::get('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'historyIndex'])->name('documents.history.index');
+    Route::post('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'storeHistoryIndex'])->name('documents.history.store');
+    Route::post('/documentos/carpeta/{person}/historia-na', [DocumentController::class, 'markHistoryNa'])->name('documents.history.na');
     Route::post('/documentos/carpeta/{person}/cursos', [DocumentController::class, 'storeCourse'])->name('documents.courses.store');
     Route::get('/documentos/archivo/{document}/ver', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documentos/archivo/{document}/descarga', [DocumentController::class, 'download'])->name('documents.download');

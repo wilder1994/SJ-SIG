@@ -51,7 +51,7 @@ UI: mismo layout gerencial; paleta institucional del logo SJ (navy, azure, cian,
 1. Copiar `.env.example` → `.env` y `php artisan key:generate`.
 2. Crear base `sj_sig` (utf8mb4). Credenciales locales típicas: `root` / vacío.
 3. `composer install` y `npm install && npm run build`.
-4. `php artisan migrate:fresh --seed` (o solo `php artisan migrate` si ya hay datos y solo faltan tablas nuevas como `sites`).
+4. `php artisan migrate:fresh --seed` (o solo `php artisan migrate` si ya hay datos y solo faltan tablas nuevas: `sites`, `document_batches`, columnas de Historia Laboral).
 5. Copiar [`docs/apache/00-aae-sj-sig.conf`](docs/apache/00-aae-sj-sig.conf) a `C:\laragon\etc\apache2\sites-enabled\` (no reemplaza otros vhosts) y recargar Apache.
 6. Alternativa: `php artisan serve --host=0.0.0.0 --port=8086`.
 
@@ -62,7 +62,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
 | **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. **Historia Laboral** indexada (próx.) | Interno/admin: Subir PDF + indexar; entidad consulta Listado/ojo |
+| **Documentos** | Carpeta por vigilante. **Historia Laboral** indexada (26 tipos) | Interno/admin: Subir PDF + indexar; entidad consulta Listado/ojo |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Próximo (documentado en el informe §6.1, aún no código):** carpeta **Historia Laboral** con checklist de tipos; subir PDF multipágina → indexar páginas → archivos separados; consulta vía **Listado** + preview. Botón **Escanear** pendiente de decisión.
+**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin sube un PDF → indexa rangos de página (tipo + nombre `Tipo_cedula_Apellidos_Nombres`) → un archivo por tipo. Consulta: **Listado** + ojo (preview). Tipos “si aplica” se pueden marcar **No aplica**. Botón **Escanear** pendiente de decisión. Tras pull: `php artisan migrate`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

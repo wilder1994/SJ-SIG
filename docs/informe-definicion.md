@@ -3,7 +3,7 @@
 **Producto:** SJ-SIG  
 **Empresa:** SJ  
 **Estado:** infraestructura v1 en local (Laravel 13)  
-**Última actualización:** 2026-09-08  
+**Última actualización:** 2026-09-09  
 **Objeto:** plataforma de gestión, supervisión, trazabilidad y análisis del servicio de vigilancia y seguridad privada, para cumplimiento del factor 4.2.4 (herramienta tecnológica, 2,0 puntos) y uso operativo multi-cliente.
 
 Este documento es la bitácora de producto. Cada decisión de alcance, tenancy, módulo o anexo se registra aquí antes de construir.
@@ -44,7 +44,7 @@ Pendiente: texto exacto del Anexo 7.4 (casillas, plazos, URL, evidencias) y rest
 | # | Requisito del pliego | Decisión de producto |
 |---|----------------------|----------------------|
 | 1 | Acceso por navegador web; control de roles; repositorio/gestor documental (HV, certificados, cursos, etc.) del personal de vigilancia **asociado al servicio u operación con sus clientes** | Obligatorio. Web HTTPS. Roles y policies. Documentos por persona y por contrato/cliente, no un archivo corporativo suelto. |
-| 2 | Buscador por carpetas o archivos; visualizar los archivos de cada carpeta del personal | Obligatorio. Catálogo de carpetas por persona (HV, certificados, cursos, afiliaciones, otros). Búsqueda + visor in-app. |
+| 2 | Buscador por carpetas o archivos; visualizar los archivos de cada carpeta del personal | Obligatorio. Catálogo de carpetas por persona (**Historia Laboral** indexada, certificados, cursos, afiliaciones, otros). Búsqueda + visor in-app. |
 | 3 | Visualizar cursos realizados por la empresa al personal: **título y fecha** | Obligatorio. Entidad mínima: título + fecha. Evidencia PDF opcional de refuerzo. |
 | 4 | Visualizar EPS, caja de compensación y pensión; visualizar documentos **parafiscales de la empresa** | Obligatorio. Dos capas: ficha de persona (importable) vs. parafiscales de SJ por periodo (no van en la ficha de empleado). |
 | 5 | **Llevar registro** y visualizar mantenimientos técnicos de infraestructura de seguridad electrónica | Obligatorio **en la plataforma** (alta + consulta + evidencias). El proceso operativo sigue en el área técnica de SJ. No es un CMMS interno. Origen v1: carga manual del técnico. |
@@ -98,7 +98,7 @@ Reglas de aislamiento:
 - Entidad, operaciones y técnico: un cliente; 404 al cruzar IDs.
 - Perfil de plataforma: solo lectura. Alta/edición de usuarios: solo Administración.
 - Storage: `tenants/{tenant_id}/contracts/{contract_id}/...` y `avatars/` (no se versionan).
-- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` (usuarios/clientes/equipo).
+- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest`.
 
 ---
 
@@ -159,7 +159,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
 
-### 6.1 Historia Laboral — gestión documental (próxima implementación)
+### 6.1 Historia Laboral — gestión documental (hecho; escáner pendiente)
 
 Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gestión documental indexada** por tipo de documento.
 
@@ -208,11 +208,12 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 | 25 | Examen psicofísico | Si aplica |
 | 26 | Examen psicosensométrico | Si aplica |
 
-#### Capas técnicas previstas
+#### Capas técnicas
 
-- Enum `LaborHistoryDocumentType` (código, etiqueta, required/optional).
-- Extensión de `person_documents` (o servicio de indexación) + `IndexLaborHistoryPdfService` (partir PDF por rangos de página).
-- UI: `documents/folder` (consulta Listado) + vista de indexación post-upload.
+- Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
+- Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `page_from`/`page_to`, `not_applicable`).
+- `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por rangos de página con FPDI).
+- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` post-upload.
 - Sin cambiar el aislamiento por cliente/contrato.
 
 ---
@@ -223,7 +224,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho base. **Próximo:** Historia Laboral indexada (subir PDF + indexar). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral indexada (subir PDF + indexar). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
@@ -242,7 +243,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
-| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/historia/{batch}`, `/historia-na`, `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
 Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
@@ -262,7 +263,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Historia Laboral: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI). Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -272,7 +273,7 @@ Local aislado:
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull con instalaciones: `php artisan migrate`. Demo: `php artisan migrate:fresh --seed`.
+- Tras pull: `php artisan migrate` (p. ej. `document_batches` e indexación de Historia Laboral). Demo: `php artisan migrate:fresh --seed`.
 - Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
 ### Usuarios y claves de prueba (demo local)
@@ -325,3 +326,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-08 | Instalaciones → puestos con modalidad (8/12/24 h) y unidades (cupo de vigilantes). Tabla demo de usuarios/claves en el informe. |
 | 2026-09-09 | Acceso LAN: Listen `0.0.0.0:8086`, script firewall y docs para cualquier equipo de la misma red. |
 | 2026-09-09 | Especificación Historia Laboral (gestión documental indexada): catálogo de 26 tipos, Subir PDF + indexar, Listado con preview. Escáner dejado pendiente. |
+| 2026-09-09 | Implementación Historia Laboral: lote PDF, indexador por rangos, checklist Listado + preview, N/A. Escáner sigue pendiente. |

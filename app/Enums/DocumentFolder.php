@@ -13,7 +13,7 @@ enum DocumentFolder: string
     public function label(): string
     {
         return match ($this) {
-            self::HojaVida => 'Hoja de vida',
+            self::HojaVida => 'Historia Laboral',
             self::Certificados => 'Certificados',
             self::Cursos => 'Cursos',
             self::Afiliaciones => 'Afiliaciones',
@@ -24,7 +24,7 @@ enum DocumentFolder: string
     public function hint(): string
     {
         return match ($this) {
-            self::HojaVida => 'Hoja de vida del vigilante (PDF).',
+            self::HojaVida => 'Checklist indexado de ingreso y selección. Subir PDF y asignar tipo a cada página.',
             self::Certificados => 'Aptitud, armas, escolta, policía u otros certificados de idoneidad.',
             self::Cursos => 'Acta o diploma del curso (el título y la fecha van en la tabla Cursos).',
             self::Afiliaciones => 'Certificado PDF de EPS, pensión y caja. Es lo que consulta la entidad.',

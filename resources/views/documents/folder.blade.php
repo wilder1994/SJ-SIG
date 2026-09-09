@@ -23,7 +23,17 @@
 @if($cargar)
 <article class="card" style="margin-bottom:12px">
     <p class="kicker">Carga (usuario interno)</p>
-    <p class="muted" style="margin-bottom:10px">HV, certificados, actas de curso, certificados de EPS/pensión/caja y otros. Los títulos de curso se registran aquí.</p>
+    <p class="muted" style="margin-bottom:12px">Historia Laboral se indexa por tipo. El resto de carpetas se sube archivo a archivo. El escáner queda pendiente.</p>
+
+    <p style="margin:0 0 4px;font-weight:500">Historia Laboral</p>
+    <p class="muted">Suba un PDF (una o varias páginas). En el siguiente paso asigna tipo y nombre a cada rango.</p>
+    <form method="post" action="{{ route('documents.history.batch', $person) }}" enctype="multipart/form-data" style="display:flex;gap:8px;margin:8px 0 16px;align-items:center">
+        @csrf
+        <input type="file" name="file" accept=".pdf" required style="flex:1">
+        <button class="btn" type="submit">Subir PDF</button>
+        <button class="btn ghost" type="button" disabled title="Pendiente: decisión de agente de escáner">Escanear</button>
+    </form>
+
     <form method="post" action="{{ route('documents.courses.store', $person) }}" class="form-grid" style="margin-bottom:16px">
         @csrf
         <label class="field">Curso · título
@@ -34,7 +44,9 @@
         </label>
         <div class="span-2"><button class="btn" type="submit">Registrar curso</button></div>
     </form>
+
     @foreach(\App\Enums\DocumentFolder::cases() as $folder)
+        @continue($folder === \App\Enums\DocumentFolder::HojaVida)
         <p style="margin:10px 0 4px;font-weight:500">{{ $folder->label() }}</p>
         <p class="muted">{{ $folder->hint() }}</p>
         <form method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" style="display:flex;gap:8px;margin:6px 0 12px;align-items:center">
@@ -63,8 +75,55 @@
     </article>
     <article class="card">
         <p class="kicker">Archivos</p>
+        <div class="history-head">
+            <div>
+                <p style="margin:0;font-weight:500">Historia Laboral</p>
+                <p class="muted">{{ $historySummary['loaded'] }}/{{ $historySummary['total'] }} indexados · {{ $historySummary['required_loaded'] }}/{{ $historySummary['required'] }} obligatorios</p>
+            </div>
+            <button class="btn ghost" type="button" data-toggle-panel="history-list">Listado</button>
+        </div>
+        <div id="history-list" hidden>
+            <table class="data" style="margin-top:10px">
+                <thead><tr><th>Tipo</th><th>Estado</th><th></th></tr></thead>
+                <tbody>
+                @foreach($historyRows as $row)
+                    <tr>
+                        <td>
+                            {{ $row['type']->label() }}
+                            <span class="muted"> · {{ $row['type']->requirement()->label() }}</span>
+                        </td>
+                        <td>
+                            @if($row['status'] === 'loaded')
+                                Cargado
+                            @elseif($row['status'] === 'na')
+                                N/A
+                            @else
+                                Falta
+                            @endif
+                        </td>
+                        <td style="white-space:nowrap">
+                            @if($row['status'] === 'loaded' && $row['document'])
+                                <button class="btn ghost icon-eye" type="button" data-preview="{{ route('documents.preview', $row['document']) }}" data-name="{{ $row['document']->label() }}" title="Ver" aria-label="Ver">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                                </button>
+                                <a class="btn ghost" href="{{ route('documents.download', $row['document']) }}">Descargar</a>
+                            @elseif($cargar && $row['status'] !== 'na')
+                                <form method="post" action="{{ route('documents.history.na', $person) }}" style="display:inline">
+                                    @csrf
+                                    <input type="hidden" name="document_type" value="{{ $row['type']->value }}">
+                                    <button class="btn ghost" type="submit">No aplica</button>
+                                </form>
+                            @endif
+                        </td>
+                    </tr>
+                @endforeach
+                </tbody>
+            </table>
+        </div>
+
         @foreach(\App\Enums\DocumentFolder::cases() as $folder)
-            <p style="margin:12px 0 4px;font-weight:500">{{ $folder->label() }}</p>
+            @continue($folder === \App\Enums\DocumentFolder::HojaVida)
+            <p style="margin:16px 0 4px;font-weight:500">{{ $folder->label() }}</p>
             @php $files = $person->documents->filter(fn ($doc) => $doc->folder === $folder); @endphp
             @forelse($files as $file)
                 <div class="file-row">
