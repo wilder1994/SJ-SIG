@@ -2,6 +2,7 @@
 
 namespace App\Services\Personnel;
 
+use App\Enums\AffiliationDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\DocumentBatch;
@@ -16,7 +17,7 @@ use setasign\Fpdi\Fpdi;
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType, display_name: string, pages: list<int>}>  $slices
+     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType, display_name: string, pages: list<int>}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -34,15 +35,17 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType, display_name: string, pages: list<int>} $slice */
+    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType, display_name: string, pages: list<int>} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
         $pages = $this->normalizePages($slice['pages'], $batch->page_count);
+        $folder = $batch->folder ?? DocumentFolder::HojaVida;
 
         $relative = sprintf(
-            'tenants/%d/people/%d/hv/%s-%s.pdf',
+            'tenants/%d/people/%d/%s/%s-%s.pdf',
             $person->tenant_id,
             $person->id,
+            $folder->value,
             $slice['type']->value,
             Str::uuid()->toString(),
         );
@@ -58,15 +61,15 @@ final class IndexLaborHistoryPdfService
 
         PersonDocument::query()
             ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::HojaVida)
-            ->where('document_type', $slice['type'])
+            ->where('folder', $folder)
+            ->where('document_type', $slice['type']->value)
             ->delete();
 
         return PersonDocument::query()->create([
             'tenant_id' => $person->tenant_id,
             'person_id' => $person->id,
-            'folder' => DocumentFolder::HojaVida,
-            'document_type' => $slice['type'],
+            'folder' => $folder,
+            'document_type' => $slice['type']->value,
             'display_name' => $name,
             'page_from' => $pages[0],
             'page_to' => $pages[array_key_last($pages)],

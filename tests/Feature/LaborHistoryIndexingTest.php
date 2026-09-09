@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AffiliationDocumentType;
+use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\DocumentBatch;
 use App\Models\Person;
@@ -28,10 +30,15 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('Historia Laboral')
             ->assertSee('Listado')
             ->assertSee('1/26 indexados')
+            ->assertSee('3/8 indexados')
             ->assertDontSee('Subir PDF');
 
         $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/historia')
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
+            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones')
             ->assertForbidden();
     }
 
@@ -58,7 +65,10 @@ final class LaborHistoryIndexingTest extends TestCase
             ->post('/documentos/carpeta/'.$person->id.'/historia', ['file' => $file])
             ->assertRedirect();
 
-        $batch = DocumentBatch::query()->where('person_id', $person->id)->firstOrFail();
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::HojaVida)
+            ->firstOrFail();
         $this->assertSame(3, $batch->page_count);
 
         $this->actingAs($interno)
@@ -83,7 +93,7 @@ final class LaborHistoryIndexingTest extends TestCase
 
         $document = PersonDocument::query()
             ->where('person_id', $person->id)
-            ->where('document_type', $type)
+            ->where('document_type', $type->value)
             ->firstOrFail();
 
         $this->assertSame([1, 3], $document->pages);
@@ -95,5 +105,59 @@ final class LaborHistoryIndexingTest extends TestCase
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
             ->assertSee('2/26 indexados');
+    }
+
+    public function test_internal_user_can_index_affiliation_pages(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $type = AffiliationDocumentType::Cesantias;
+        $name = $type->suggestedName($person);
+
+        $path = storage_path('framework/testing/af-lote.pdf');
+        SimplePdf::writePages($path, ['Pagina EPS', 'Pagina cesantias']);
+        $file = new UploadedFile($path, 'afiliaciones.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Afiliaciones)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/afiliaciones/'.$batch->id)
+            ->assertOk()
+            ->assertSee('Afiliaciones')
+            ->assertSee('certificado_cesantias');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => $type->value,
+                    'display_name' => $name,
+                    'pages' => [2],
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseHas('person_documents', [
+            'person_id' => $person->id,
+            'folder' => DocumentFolder::Afiliaciones->value,
+            'document_type' => $type->value,
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('4/8 indexados');
     }
 }

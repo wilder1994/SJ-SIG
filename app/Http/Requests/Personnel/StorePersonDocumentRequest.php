@@ -17,7 +17,10 @@ final class StorePersonDocumentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'folder' => ['required', Rule::enum(DocumentFolder::class)],
+            'folder' => ['required', Rule::enum(DocumentFolder::class)->except([
+                DocumentFolder::HojaVida,
+                DocumentFolder::Afiliaciones,
+            ])],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:12288'],
             'expires_on' => ['nullable', 'date'],
         ];

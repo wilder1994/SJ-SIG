@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\AffiliationDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\ElectronicAssetKind;
@@ -188,12 +189,12 @@ final class DatabaseSeeder extends Seeder
             'taken_on' => '2026-02-12',
         ]);
 
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::HojaVida, 'Hoja de vida.pdf', 'Hoja de vida', $person->full_name);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::HojaVida, 'Hoja de vida.pdf', 'Hoja de vida', $person->full_name, LaborHistoryDocumentType::HojaVida);
         $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Certificados, 'Certificado de aptitud.pdf', 'Certificado de aptitud', 'Vigente para el servicio contratado');
         $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Cursos, 'Acta curso manejo de defensas.pdf', 'Acta de curso', 'Manejo de defensas 2026-02-12');
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado EPS.pdf', 'Certificado de afiliacion EPS', (string) $person->eps_name);
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado pension.pdf', 'Certificado de afiliacion pension', (string) $person->afp_name);
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado caja.pdf', 'Certificado de caja de compensacion', (string) $person->compensation_fund);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado EPS.pdf', 'Certificado de afiliacion EPS', (string) $person->eps_name, AffiliationDocumentType::Eps);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado pension.pdf', 'Certificado de afiliacion pension', (string) $person->afp_name, AffiliationDocumentType::Afp);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado caja.pdf', 'Certificado de caja de compensacion', (string) $person->compensation_fund, AffiliationDocumentType::Caja);
 
         $parafiscalRel = 'tenants/'.$tenant->id.'/contracts/'.$contract->id.'/parafiscals/'.$month->format('Y-m').'/pila.pdf';
         SimplePdf::write(storage_path('app/'.$parafiscalRel), 'Planilla PILA '.$month->format('Y-m'), 'Soporte parafiscal de empresa para el contrato '.$contract->code);
@@ -257,6 +258,7 @@ final class DatabaseSeeder extends Seeder
         string $filename,
         string $title,
         string $body,
+        LaborHistoryDocumentType|AffiliationDocumentType|null $indexedType = null,
     ): void {
         $relative = sprintf(
             'tenants/%d/contracts/%d/people/%d/%s/%s',
@@ -268,15 +270,12 @@ final class DatabaseSeeder extends Seeder
         );
         $absolute = storage_path('app/'.$relative);
         SimplePdf::write($absolute, $title, $body);
-        $historyType = $folder === DocumentFolder::HojaVida ? LaborHistoryDocumentType::HojaVida : null;
-        $display = $historyType?->suggestedName($person);
-
         PersonDocument::query()->create([
             'tenant_id' => $tenantId,
             'person_id' => $person->id,
             'folder' => $folder,
-            'document_type' => $historyType,
-            'display_name' => $display,
+            'document_type' => $indexedType?->value,
+            'display_name' => $indexedType?->suggestedName($person),
             'original_name' => $filename,
             'disk_path' => $relative,
             'mime' => 'application/pdf',

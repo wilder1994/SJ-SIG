@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\AffiliationDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Support\Personnel\IndexedFolder;
 use App\Support\Tenancy\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,7 +35,7 @@ class PersonDocument extends Model
     {
         return [
             'folder' => DocumentFolder::class,
-            'document_type' => LaborHistoryDocumentType::class,
+            'document_type' => 'string',
             'not_applicable' => 'boolean',
             'page_from' => 'integer',
             'page_to' => 'integer',
@@ -48,10 +50,23 @@ class PersonDocument extends Model
         return $this->belongsTo(Person::class);
     }
 
+    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|null
+    {
+        if (! is_string($this->document_type) || $this->document_type === '' || $this->folder === null) {
+            return null;
+        }
+
+        try {
+            return IndexedFolder::resolve($this->folder, $this->document_type);
+        } catch (\InvalidArgumentException) {
+            return null;
+        }
+    }
+
     public function label(): string
     {
         return $this->display_name
-            ?: $this->document_type?->label()
+            ?: $this->typed()?->label()
             ?: $this->original_name;
     }
 

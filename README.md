@@ -62,7 +62,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
 | **Personal** | Quién es: buscador, Excel, alta unitaria, ficha | Interno / admin |
-| **Documentos** | Carpeta por vigilante. **Historia Laboral** indexada (26 tipos) | Interno/admin: tarjetas (arrastrar/pegar) + indexar; entidad consulta Listado/ojo |
+| **Documentos** | Carpeta por vigilante. **Historia Laboral** (26) y **Afiliaciones** (8) indexadas | Interno/admin: tarjetas (arrastrar/pegar) + indexar; entidad consulta Listado/ojo |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Universos y cuentas de plataforma | Solo administración |
 | **Instalaciones** | Plantas/bodegas → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin: **Cargar documentos** → tarjetas (arrastrar, pegar o seleccionar; se ve icono y nombre) → **Indexar lote** (izquierda: tipo/lista; derecha: miniaturas; scroll por panel) → páginas sueltas (1, 7, 11…) → un archivo por tipo. Consulta: **Listado** + ojo. **Escanear** pendiente. Tras pull: `php artisan migrate` y `npm run build`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral** (26 tipos) y **Afiliaciones** (8 tipos: estado, EPS, cesantías, pensiones, ARL, caja, vida, exequial): mismo indexador. Interno/admin: **Cargar documentos** → tarjeta PDF → **Indexar lote** (miniaturas, páginas sueltas). Consulta: **Listado** + ojo. **Escanear** pendiente. Tras pull: `php artisan migrate` y `npm run build`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

@@ -6,7 +6,7 @@
 <section class="index-workspace">
     <div class="index-side">
         <article class="card index-meta">
-            <p class="kicker">Historia Laboral</p>
+            <p class="kicker">{{ $folder->label() }}</p>
             <h2 class="display" style="font-size:22px;margin:4px 0 8px">Indexar lote</h2>
             <p class="muted">{{ $person->full_name }} · {{ $person->document_type }} {{ $person->document_number }}</p>
             <p class="muted">{{ $batch->original_name }} · {{ $batch->page_count }} página{{ $batch->page_count === 1 ? '' : 's' }}</p>
@@ -14,7 +14,7 @@
         </article>
 
         <article class="card index-composer">
-            <form method="post" action="{{ route('documents.history.store', ['person' => $person, 'batch' => $batch]) }}" id="index-form">
+            <form method="post" action="{{ $storeUrl }}" id="index-form">
                 @csrf
                 <div class="index-composer-form">
                     <p class="muted" id="page-hint">Ninguna página seleccionada.</p>
@@ -47,7 +47,7 @@
                         </button>
                         <div class="page-thumb-bar">
                             <span>{{ $page }}</span>
-                            <button class="btn ghost" type="button" data-preview="{{ route('documents.history.preview', ['person' => $person, 'batch' => $batch]) }}#page={{ $page }}" data-name="Página {{ $page }} · {{ $batch->original_name }}">Ampliar</button>
+                            <button class="btn ghost" type="button" data-preview="{{ $previewUrl }}#page={{ $page }}" data-name="Página {{ $page }} · {{ $batch->original_name }}">Ampliar</button>
                         </div>
                     </div>
                 @endfor

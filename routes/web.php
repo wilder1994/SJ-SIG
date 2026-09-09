@@ -63,6 +63,11 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/documentos/carpeta/{person}/historia/{batch}/ver', [DocumentController::class, 'previewBatch'])->name('documents.history.preview');
     Route::post('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'storeHistoryIndex'])->name('documents.history.store');
     Route::post('/documentos/carpeta/{person}/historia-na', [DocumentController::class, 'markHistoryNa'])->name('documents.history.na');
+    Route::post('/documentos/carpeta/{person}/afiliaciones', [DocumentController::class, 'storeAffiliationBatch'])->name('documents.affiliations.batch');
+    Route::get('/documentos/carpeta/{person}/afiliaciones/{batch}', [DocumentController::class, 'affiliationIndex'])->name('documents.affiliations.index');
+    Route::get('/documentos/carpeta/{person}/afiliaciones/{batch}/ver', [DocumentController::class, 'previewAffiliationBatch'])->name('documents.affiliations.preview');
+    Route::post('/documentos/carpeta/{person}/afiliaciones/{batch}', [DocumentController::class, 'storeAffiliationIndex'])->name('documents.affiliations.store');
+    Route::post('/documentos/carpeta/{person}/afiliaciones-na', [DocumentController::class, 'markAffiliationNa'])->name('documents.affiliations.na');
     Route::post('/documentos/carpeta/{person}/cursos', [DocumentController::class, 'storeCourse'])->name('documents.courses.store');
     Route::get('/documentos/archivo/{document}/ver', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documentos/archivo/{document}/descarga', [DocumentController::class, 'download'])->name('documents.download');

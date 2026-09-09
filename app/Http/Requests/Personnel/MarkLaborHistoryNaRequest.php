@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests\Personnel;
 
-use App\Enums\LaborHistoryDocumentType;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class MarkLaborHistoryNaRequest extends FormRequest
 {
@@ -17,7 +15,7 @@ final class MarkLaborHistoryNaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'document_type' => ['required', Rule::enum(LaborHistoryDocumentType::class)],
+            'document_type' => ['required', 'string'],
         ];
     }
 }

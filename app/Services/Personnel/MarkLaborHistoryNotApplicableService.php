@@ -2,6 +2,7 @@
 
 namespace App\Services\Personnel;
 
+use App\Enums\AffiliationDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\Person;
@@ -9,19 +10,19 @@ use App\Models\PersonDocument;
 
 final class MarkLaborHistoryNotApplicableService
 {
-    public function execute(Person $person, LaborHistoryDocumentType $type): PersonDocument
+    public function execute(Person $person, DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType $type): PersonDocument
     {
         PersonDocument::query()
             ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::HojaVida)
-            ->where('document_type', $type)
+            ->where('folder', $folder)
+            ->where('document_type', $type->value)
             ->delete();
 
         return PersonDocument::query()->create([
             'tenant_id' => $person->tenant_id,
             'person_id' => $person->id,
-            'folder' => DocumentFolder::HojaVida,
-            'document_type' => $type,
+            'folder' => $folder,
+            'document_type' => $type->value,
             'display_name' => $type->label(),
             'not_applicable' => true,
             'original_name' => $type->label(),

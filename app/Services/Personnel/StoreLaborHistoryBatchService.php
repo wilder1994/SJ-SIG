@@ -2,6 +2,7 @@
 
 namespace App\Services\Personnel;
 
+use App\Enums\DocumentFolder;
 use App\Models\Contract;
 use App\Models\DocumentBatch;
 use App\Models\Person;
@@ -12,14 +13,15 @@ use Illuminate\Support\Str;
 
 final class StoreLaborHistoryBatchService
 {
-    public function execute(Contract $contract, Person $person, UploadedFile $file): DocumentBatch
+    public function execute(Contract $contract, Person $person, UploadedFile $file, DocumentFolder $folder = DocumentFolder::HojaVida): DocumentBatch
     {
         $extension = strtolower($file->getClientOriginalExtension() ?: 'pdf');
         $relative = sprintf(
-            'tenants/%d/contracts/%d/people/%d/hv/batches/%s.%s',
+            'tenants/%d/contracts/%d/people/%d/%s/batches/%s.%s',
             $contract->tenant_id,
             $contract->id,
             $person->id,
+            $folder->value,
             Str::uuid()->toString(),
             $extension,
         );
@@ -38,6 +40,7 @@ final class StoreLaborHistoryBatchService
         return DocumentBatch::query()->create([
             'tenant_id' => $contract->tenant_id,
             'person_id' => $person->id,
+            'folder' => $folder,
             'original_name' => $original,
             'disk_path' => $relative,
             'mime' => $mime,
