@@ -151,7 +151,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
-| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Subir PDF multipágina → indexar (v1). Escáner pendiente |
+| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Subir PDF → miniaturas → páginas sueltas (p. ej. 1, 7, 11). Escáner pendiente |
 | Certificados | Aptitud, armas, escolta, policía, etc. | Documentos → carpeta |
 | Cursos | Título y fecha + acta/diploma PDF | Documentos → carpeta |
 | Afiliaciones | Certificado PDF de EPS, pensión y caja | Documentos → carpeta (nombres siguen en la ficha) |
@@ -168,7 +168,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
 - En modo carga: botón **Subir** (PDF ya digitalizado, preferible multipágina).
-- Pantalla **Indexar lote**: seleccionar una o varias páginas → asignar tipo del catálogo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (PDF cortado/separado).
+- Pantalla **Indexar lote**: miniaturas del PDF; seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
 
@@ -211,9 +211,9 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 #### Capas técnicas
 
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
-- Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `page_from`/`page_to`, `not_applicable`).
-- `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por rangos de página con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` post-upload.
+- Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
+- `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
+- UI: `documents/folder` (consulta Listado + ojo) + `documents/index-batch` (miniaturas PDF.js, selección no consecutiva).
 - Sin cambiar el aislamiento por cliente/contrato.
 
 ---
@@ -224,7 +224,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral indexada (subir PDF + indexar). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Historia Laboral: miniaturas + páginas no consecutivas. Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho (nombres en ficha; PDF en carpeta / PILA en Parafiscales) |
@@ -243,7 +243,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
-| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/historia/{batch}`, `/historia-na`, `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/historia/{batch}`, `/historia/{batch}/ver`, `/historia-na`, `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
 Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
@@ -263,7 +263,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Historia Laboral: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI). Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Historia Laboral: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; páginas en JSON). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -273,7 +273,7 @@ Local aislado:
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull: `php artisan migrate` (p. ej. `document_batches` e indexación de Historia Laboral). Demo: `php artisan migrate:fresh --seed`.
+- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches`, columna `pages`). Demo: `php artisan migrate:fresh --seed`.
 - Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
 ### Usuarios y claves de prueba (demo local)
@@ -327,3 +327,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Acceso LAN: Listen `0.0.0.0:8086`, script firewall y docs para cualquier equipo de la misma red. |
 | 2026-09-09 | Especificación Historia Laboral (gestión documental indexada): catálogo de 26 tipos, Subir PDF + indexar, Listado con preview. Escáner dejado pendiente. |
 | 2026-09-09 | Implementación Historia Laboral: lote PDF, indexador por rangos, checklist Listado + preview, N/A. Escáner sigue pendiente. |
+| 2026-09-09 | Indexador: páginas no consecutivas + miniaturas PDF.js. |

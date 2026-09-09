@@ -60,6 +60,7 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::post('/documentos/carpeta/{person}', [DocumentController::class, 'store'])->name('documents.store');
     Route::post('/documentos/carpeta/{person}/historia', [DocumentController::class, 'storeHistoryBatch'])->name('documents.history.batch');
     Route::get('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'historyIndex'])->name('documents.history.index');
+    Route::get('/documentos/carpeta/{person}/historia/{batch}/ver', [DocumentController::class, 'previewBatch'])->name('documents.history.preview');
     Route::post('/documentos/carpeta/{person}/historia/{batch}', [DocumentController::class, 'storeHistoryIndex'])->name('documents.history.store');
     Route::post('/documentos/carpeta/{person}/historia-na', [DocumentController::class, 'markHistoryNa'])->name('documents.history.na');
     Route::post('/documentos/carpeta/{person}/cursos', [DocumentController::class, 'storeCourse'])->name('documents.courses.store');

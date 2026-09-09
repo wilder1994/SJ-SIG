@@ -21,8 +21,8 @@ final class IndexLaborHistoryRequest extends FormRequest
             'slices' => ['required', 'array', 'min:1'],
             'slices.*.document_type' => ['required', Rule::enum(LaborHistoryDocumentType::class)],
             'slices.*.display_name' => ['required', 'string', 'max:180'],
-            'slices.*.page_from' => ['required', 'integer', 'min:1'],
-            'slices.*.page_to' => ['required', 'integer', 'min:1'],
+            'slices.*.pages' => ['required', 'array', 'min:1'],
+            'slices.*.pages.*' => ['required', 'integer', 'min:1'],
         ];
     }
 
@@ -30,10 +30,9 @@ final class IndexLaborHistoryRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             foreach ($this->input('slices', []) as $index => $slice) {
-                $from = (int) ($slice['page_from'] ?? 0);
-                $to = (int) ($slice['page_to'] ?? 0);
-                if ($from > 0 && $to > 0 && $to < $from) {
-                    $validator->errors()->add('slices.'.$index.'.page_to', 'La página final debe ser mayor o igual que la inicial.');
+                $pages = array_map('intval', $slice['pages'] ?? []);
+                if ($pages !== array_values(array_unique($pages))) {
+                    $validator->errors()->add('slices.'.$index.'.pages', 'Hay páginas repetidas en este corte.');
                 }
             }
         });

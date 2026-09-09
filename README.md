@@ -51,7 +51,7 @@ UI: mismo layout gerencial; paleta institucional del logo SJ (navy, azure, cian,
 1. Copiar `.env.example` → `.env` y `php artisan key:generate`.
 2. Crear base `sj_sig` (utf8mb4). Credenciales locales típicas: `root` / vacío.
 3. `composer install` y `npm install && npm run build`.
-4. `php artisan migrate:fresh --seed` (o solo `php artisan migrate` si ya hay datos y solo faltan tablas nuevas: `sites`, `document_batches`, columnas de Historia Laboral).
+4. `php artisan migrate:fresh --seed` (o solo `php artisan migrate` si ya hay datos: `sites`, `document_batches`, `pages` JSON). Tras pull hace falta `npm install && npm run build` (PDF.js).
 5. Copiar [`docs/apache/00-aae-sj-sig.conf`](docs/apache/00-aae-sj-sig.conf) a `C:\laragon\etc\apache2\sites-enabled\` (no reemplaza otros vhosts) y recargar Apache.
 6. Alternativa: `php artisan serve --host=0.0.0.0 --port=8086`.
 
@@ -70,7 +70,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 Flujo actual: Personal → Nuevo empleado (o Excel) → Documentos → Ver carpeta → **Cargar documentos**.
 
-**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin sube un PDF → indexa rangos de página (tipo + nombre `Tipo_cedula_Apellidos_Nombres`) → un archivo por tipo. Consulta: **Listado** + ojo (preview). Tipos “si aplica” se pueden marcar **No aplica**. Botón **Escanear** pendiente de decisión. Tras pull: `php artisan migrate`. Test: `LaborHistoryIndexingTest`.
+**Historia Laboral:** checklist de 26 tipos (`LaborHistoryDocumentType`). Interno/admin sube un PDF → ve miniaturas y marca páginas sueltas (1, 7, 11…) → tipo + nombre `Tipo_cedula_Apellidos_Nombres` → un archivo por tipo. Consulta: **Listado** + ojo (preview). Tipos “si aplica” se pueden marcar **No aplica**. Botón **Escanear** pendiente. Tras pull: `php artisan migrate`. Test: `LaborHistoryIndexingTest`.
 
 Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
 

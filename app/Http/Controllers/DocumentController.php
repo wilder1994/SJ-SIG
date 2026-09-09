@@ -110,6 +110,7 @@ final class DocumentController extends Controller
             'batch' => $lote,
             'historyMeta' => [
                 'page_count' => $lote->page_count,
+                'preview_url' => route('documents.history.preview', ['person' => $model, 'batch' => $lote]),
                 'types' => collect(LaborHistoryDocumentType::cases())->map(fn (LaborHistoryDocumentType $type) => [
                     'value' => $type->value,
                     'label' => $type->label(),
@@ -127,15 +128,19 @@ final class DocumentController extends Controller
 
         $slices = [];
         foreach ($request->validated('slices') as $row) {
-            $from = (int) $row['page_from'];
-            $to = (int) $row['page_to'];
-            abort_if($from > $lote->page_count || $to > $lote->page_count, 422);
+            $pages = [];
+            foreach ($row['pages'] as $page) {
+                $page = (int) $page;
+                abort_if($page > $lote->page_count, 422);
+                if (! in_array($page, $pages, true)) {
+                    $pages[] = $page;
+                }
+            }
 
             $slices[] = [
                 'type' => LaborHistoryDocumentType::from($row['document_type']),
                 'display_name' => $row['display_name'],
-                'page_from' => $from,
-                'page_to' => $to,
+                'pages' => $pages,
             ];
         }
 
@@ -169,6 +174,15 @@ final class DocumentController extends Controller
         return redirect()
             ->route('documents.folder', ['person' => $model, 'cargar' => 1])
             ->with('status', 'Curso registrado. El acta PDF se carga en la carpeta Cursos.');
+    }
+
+    public function previewBatch(Request $request, int $person, int $batch): StreamedResponse
+    {
+        $model = $this->personInContract($request, $person);
+        abort_unless(auth()->user()?->role->canUploadEvidence() ?? false, 403);
+        $lote = $this->batchForPerson($model, $batch);
+
+        return StoredFileResponder::stream($lote->disk_path, $lote->original_name, (string) $lote->mime, true);
     }
 
     public function preview(Request $request, int $document): StreamedResponse

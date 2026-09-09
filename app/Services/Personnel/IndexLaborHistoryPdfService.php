@@ -12,12 +12,11 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use RuntimeException;
 use setasign\Fpdi\Fpdi;
-use Throwable;
 
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType, display_name: string, page_from: int, page_to: int}>  $slices
+     * @param  list<array{type: LaborHistoryDocumentType, display_name: string, pages: list<int>}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -35,12 +34,10 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType, display_name: string, page_from: int, page_to: int} $slice */
+    /** @param array{type: LaborHistoryDocumentType, display_name: string, pages: list<int>} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
-        $from = max(1, $slice['page_from']);
-        $to = max($from, $slice['page_to']);
-        $to = min($to, $batch->page_count);
+        $pages = $this->normalizePages($slice['pages'], $batch->page_count);
 
         $relative = sprintf(
             'tenants/%d/people/%d/hv/%s-%s.pdf',
@@ -52,7 +49,7 @@ final class IndexLaborHistoryPdfService
         $absolute = storage_path('app/'.$relative);
         File::ensureDirectoryExists(dirname($absolute));
 
-        $this->extractPages($source, $absolute, $from, $to, $batch->page_count);
+        $this->extractPages($source, $absolute, $pages, $batch->page_count);
 
         $name = $slice['display_name'] !== '' ? $slice['display_name'] : $slice['type']->suggestedName($person);
         if (! str_ends_with(strtolower($name), '.pdf')) {
@@ -71,8 +68,9 @@ final class IndexLaborHistoryPdfService
             'folder' => DocumentFolder::HojaVida,
             'document_type' => $slice['type'],
             'display_name' => $name,
-            'page_from' => $from,
-            'page_to' => $to,
+            'page_from' => $pages[0],
+            'page_to' => $pages[array_key_last($pages)],
+            'pages' => $pages,
             'not_applicable' => false,
             'original_name' => $name,
             'disk_path' => $relative,
@@ -81,26 +79,44 @@ final class IndexLaborHistoryPdfService
         ]);
     }
 
-    private function extractPages(string $source, string $destination, int $from, int $to, int $pageCount): void
+    /**
+     * @param  list<int>  $pages
+     * @return list<int>
+     */
+    private function normalizePages(array $pages, int $pageCount): array
     {
-        if ($from === 1 && $to === $pageCount) {
+        $clean = [];
+        foreach ($pages as $page) {
+            $page = (int) $page;
+            if ($page >= 1 && $page <= $pageCount && ! in_array($page, $clean, true)) {
+                $clean[] = $page;
+            }
+        }
+
+        if ($clean === []) {
+            throw new RuntimeException('Seleccione al menos una página válida.');
+        }
+
+        return $clean;
+    }
+
+    /** @param list<int> $pages */
+    private function extractPages(string $source, string $destination, array $pages, int $pageCount): void
+    {
+        if ($pages === range(1, $pageCount)) {
             File::copy($source, $destination);
 
             return;
         }
 
-        try {
-            $pdf = new Fpdi;
-            $pdf->setSourceFile($source);
-            for ($page = $from; $page <= $to; $page++) {
-                $tpl = $pdf->importPage($page);
-                $size = $pdf->getTemplateSize($tpl);
-                $pdf->AddPage($size['orientation'] ?? 'P', [$size['width'], $size['height']]);
-                $pdf->useTemplate($tpl);
-            }
-            $pdf->Output('F', $destination);
-        } catch (Throwable) {
-            File::copy($source, $destination);
+        $pdf = new Fpdi;
+        $pdf->setSourceFile($source);
+        foreach ($pages as $page) {
+            $tpl = $pdf->importPage($page);
+            $size = $pdf->getTemplateSize($tpl);
+            $pdf->AddPage($size['orientation'] ?? 'P', [$size['width'], $size['height']]);
+            $pdf->useTemplate($tpl);
         }
+        $pdf->Output('F', $destination);
     }
 }

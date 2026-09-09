@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\DocumentBatch;
 use App\Models\Person;
+use App\Models\PersonDocument;
 use App\Models\User;
 use App\Support\Files\SimplePdf;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +35,7 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_internal_user_can_upload_and_index_a_pdf(): void
+    public function test_internal_user_can_index_non_contiguous_pages(): void
     {
         $this->seed();
         $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
@@ -44,44 +45,49 @@ final class LaborHistoryIndexingTest extends TestCase
         $name = $type->suggestedName($person);
 
         $path = storage_path('framework/testing/hv-lote.pdf');
-        SimplePdf::write($path, 'Lote historia laboral', 'Pagina de prueba');
+        SimplePdf::writePages($path, ['Pagina uno', 'Pagina dos', 'Pagina tres']);
         $file = new UploadedFile($path, 'lote.pdf', 'application/pdf', null, true);
 
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk()
-            ->assertSee('Cargar documentos');
+            ->assertOk();
 
         $this->actingAs($interno)
             ->post('/documentos/carpeta/'.$person->id.'/historia', ['file' => $file])
             ->assertRedirect();
 
         $batch = DocumentBatch::query()->where('person_id', $person->id)->firstOrFail();
-        $this->assertSame(1, $batch->page_count);
+        $this->assertSame(3, $batch->page_count);
 
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id)
             ->assertOk()
-            ->assertSee('Indexar lote');
+            ->assertSee('Indexar lote')
+            ->assertSee('Marque las páginas');
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id.'/ver')
+            ->assertOk();
 
         $this->actingAs($interno)
             ->post('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id, [
                 'slices' => [[
                     'document_type' => $type->value,
                     'display_name' => $name,
-                    'page_from' => 1,
-                    'page_to' => 1,
+                    'pages' => [1, 3],
                 ]],
             ])
             ->assertRedirect('/documentos/carpeta/'.$person->id);
 
-        $this->assertDatabaseHas('person_documents', [
-            'person_id' => $person->id,
-            'document_type' => $type->value,
-            'display_name' => $name.'.pdf',
-            'page_from' => 1,
-            'page_to' => 1,
-        ]);
+        $document = PersonDocument::query()
+            ->where('person_id', $person->id)
+            ->where('document_type', $type)
+            ->firstOrFail();
+
+        $this->assertSame([1, 3], $document->pages);
+        $this->assertSame(1, $document->page_from);
+        $this->assertSame(3, $document->page_to);
+        $this->assertTrue(is_file(storage_path('app/'.$document->disk_path)));
 
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)

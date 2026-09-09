@@ -20,6 +20,7 @@ class PersonDocument extends Model
         'display_name',
         'page_from',
         'page_to',
+        'pages',
         'not_applicable',
         'original_name',
         'disk_path',
@@ -36,6 +37,7 @@ class PersonDocument extends Model
             'not_applicable' => 'boolean',
             'page_from' => 'integer',
             'page_to' => 'integer',
+            'pages' => 'array',
             'expires_on' => 'date',
             'size_bytes' => 'integer',
         ];
