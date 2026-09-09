@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Models\DocumentBatch;
@@ -30,6 +32,8 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('Historia Laboral')
             ->assertSee('Listado')
             ->assertSee('1/26 indexados')
+            ->assertSee('1/3 indexados')
+            ->assertSee('1/25 indexados')
             ->assertSee('3/8 indexados')
             ->assertDontSee('Subir PDF');
 
@@ -38,7 +42,15 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertForbidden();
 
         $this->actingAs($supervisor)
+            ->post('/documentos/carpeta/'.$person->id.'/certificados')
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
             ->post('/documentos/carpeta/'.$person->id.'/afiliaciones')
+            ->assertForbidden();
+
+        $this->actingAs($supervisor)
+            ->post('/documentos/carpeta/'.$person->id.'/cursos')
             ->assertForbidden();
     }
 
@@ -159,5 +171,121 @@ final class LaborHistoryIndexingTest extends TestCase
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
             ->assertSee('4/8 indexados');
+    }
+
+    public function test_internal_user_can_index_certificate_pages(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $type = CertificateDocumentType::ExamenPsicofisico;
+        $name = $type->suggestedName($person);
+
+        $path = storage_path('framework/testing/cert-lote.pdf');
+        SimplePdf::writePages($path, ['Pagina medico', 'Pagina psicofisico']);
+        $file = new UploadedFile($path, 'certificados.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/certificados', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Certificados)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/certificados/'.$batch->id)
+            ->assertOk()
+            ->assertSee('Certificados')
+            ->assertSee('examen_psicofisico');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/certificados/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => $type->value,
+                    'display_name' => $name,
+                    'pages' => [2],
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseHas('person_documents', [
+            'person_id' => $person->id,
+            'folder' => DocumentFolder::Certificados->value,
+            'document_type' => $type->value,
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('2/3 indexados');
+    }
+
+    public function test_internal_user_can_index_supervised_course_pages(): void
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+        $type = CourseDocumentType::ReentrenamientoVigilancia;
+        $name = $type->suggestedName($person);
+
+        $path = storage_path('framework/testing/curso-lote.pdf');
+        SimplePdf::writePages($path, ['Acta reentrenamiento']);
+        $file = new UploadedFile($path, 'cursos.pdf', 'application/pdf', null, true);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
+            ->assertOk();
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/cursos', ['file' => $file])
+            ->assertRedirect();
+
+        $batch = DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->where('folder', DocumentFolder::Cursos)
+            ->firstOrFail();
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'/cursos/'.$batch->id)
+            ->assertOk()
+            ->assertSee('Cursos y capacitación')
+            ->assertSee('reentrenamiento_vigilancia');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/cursos/'.$batch->id, [
+                'slices' => [[
+                    'document_type' => $type->value,
+                    'display_name' => $name,
+                    'pages' => [1],
+                    'taken_on' => '2026-03-15',
+                    'provider' => 'Escuela de la Superintendencia',
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->assertDatabaseHas('person_documents', [
+            'person_id' => $person->id,
+            'folder' => DocumentFolder::Cursos->value,
+            'document_type' => $type->value,
+            'provider' => 'Escuela de la Superintendencia',
+        ]);
+        $this->assertDatabaseHas('courses', [
+            'person_id' => $person->id,
+            'course_type' => $type->value,
+            'provider' => 'Escuela de la Superintendencia',
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('2/25 indexados');
     }
 }

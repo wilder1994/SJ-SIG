@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\ElectronicAssetKind;
@@ -182,16 +184,29 @@ final class DatabaseSeeder extends Seeder
             'post_id' => $posts->first()->id,
         ]);
 
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::HojaVida, 'Hoja de vida.pdf', 'Hoja de vida', $person->full_name, LaborHistoryDocumentType::HojaVida);
+        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Certificados, 'Certificado de aptitud.pdf', 'Examen medico ocupacional de ingreso', 'Vigente para el servicio contratado', CertificateDocumentType::ExamenMedicoIngreso);
+        $courseDoc = $this->storePersonPdf(
+            $tenant->id,
+            $contract->id,
+            $person,
+            DocumentFolder::Cursos,
+            'Acta curso manejo de defensas.pdf',
+            'Especializacion en manejo defensivo',
+            'Manejo de defensas 2026-02-12',
+            CourseDocumentType::EspecializacionManejoDefensivo,
+            '2026-02-12',
+            'Escuela de capacitacion SJ',
+        );
         Course::query()->create([
             'tenant_id' => $tenant->id,
             'person_id' => $person->id,
-            'title' => 'Manejo de defensas',
+            'title' => CourseDocumentType::EspecializacionManejoDefensivo->label(),
+            'provider' => 'Escuela de capacitacion SJ',
+            'course_type' => CourseDocumentType::EspecializacionManejoDefensivo->value,
+            'person_document_id' => $courseDoc->id,
             'taken_on' => '2026-02-12',
         ]);
-
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::HojaVida, 'Hoja de vida.pdf', 'Hoja de vida', $person->full_name, LaborHistoryDocumentType::HojaVida);
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Certificados, 'Certificado de aptitud.pdf', 'Certificado de aptitud', 'Vigente para el servicio contratado');
-        $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Cursos, 'Acta curso manejo de defensas.pdf', 'Acta de curso', 'Manejo de defensas 2026-02-12');
         $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado EPS.pdf', 'Certificado de afiliacion EPS', (string) $person->eps_name, AffiliationDocumentType::Eps);
         $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado pension.pdf', 'Certificado de afiliacion pension', (string) $person->afp_name, AffiliationDocumentType::Afp);
         $this->storePersonPdf($tenant->id, $contract->id, $person, DocumentFolder::Afiliaciones, 'Certificado caja.pdf', 'Certificado de caja de compensacion', (string) $person->compensation_fund, AffiliationDocumentType::Caja);
@@ -258,8 +273,10 @@ final class DatabaseSeeder extends Seeder
         string $filename,
         string $title,
         string $body,
-        LaborHistoryDocumentType|AffiliationDocumentType|null $indexedType = null,
-    ): void {
+        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType|null $indexedType = null,
+        ?string $takenOn = null,
+        ?string $provider = null,
+    ): PersonDocument {
         $relative = sprintf(
             'tenants/%d/contracts/%d/people/%d/%s/%s',
             $tenantId,
@@ -270,7 +287,7 @@ final class DatabaseSeeder extends Seeder
         );
         $absolute = storage_path('app/'.$relative);
         SimplePdf::write($absolute, $title, $body);
-        PersonDocument::query()->create([
+        return PersonDocument::query()->create([
             'tenant_id' => $tenantId,
             'person_id' => $person->id,
             'folder' => $folder,
@@ -281,6 +298,8 @@ final class DatabaseSeeder extends Seeder
             'mime' => 'application/pdf',
             'size_bytes' => is_file($absolute) ? (int) filesize($absolute) : 0,
             'expires_on' => $folder === DocumentFolder::HojaVida ? now()->addDays(12) : null,
+            'taken_on' => $takenOn,
+            'provider' => $provider,
         ]);
     }
 }

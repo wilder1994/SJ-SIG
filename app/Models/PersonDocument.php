@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Support\Personnel\IndexedFolder;
@@ -29,6 +31,8 @@ class PersonDocument extends Model
         'mime',
         'size_bytes',
         'expires_on',
+        'taken_on',
+        'provider',
     ];
 
     protected function casts(): array
@@ -41,6 +45,7 @@ class PersonDocument extends Model
             'page_to' => 'integer',
             'pages' => 'array',
             'expires_on' => 'date',
+            'taken_on' => 'date',
             'size_bytes' => 'integer',
         ];
     }
@@ -50,7 +55,7 @@ class PersonDocument extends Model
         return $this->belongsTo(Person::class);
     }
 
-    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|null
+    public function typed(): LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType|null
     {
         if (! is_string($this->document_type) || $this->document_type === '' || $this->folder === null) {
             return null;

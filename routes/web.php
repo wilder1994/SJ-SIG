@@ -68,7 +68,16 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/documentos/carpeta/{person}/afiliaciones/{batch}/ver', [DocumentController::class, 'previewAffiliationBatch'])->name('documents.affiliations.preview');
     Route::post('/documentos/carpeta/{person}/afiliaciones/{batch}', [DocumentController::class, 'storeAffiliationIndex'])->name('documents.affiliations.store');
     Route::post('/documentos/carpeta/{person}/afiliaciones-na', [DocumentController::class, 'markAffiliationNa'])->name('documents.affiliations.na');
-    Route::post('/documentos/carpeta/{person}/cursos', [DocumentController::class, 'storeCourse'])->name('documents.courses.store');
+    Route::post('/documentos/carpeta/{person}/certificados', [DocumentController::class, 'storeCertificateBatch'])->name('documents.certificates.batch');
+    Route::get('/documentos/carpeta/{person}/certificados/{batch}', [DocumentController::class, 'certificateIndex'])->name('documents.certificates.index');
+    Route::get('/documentos/carpeta/{person}/certificados/{batch}/ver', [DocumentController::class, 'previewCertificateBatch'])->name('documents.certificates.preview');
+    Route::post('/documentos/carpeta/{person}/certificados/{batch}', [DocumentController::class, 'storeCertificateIndex'])->name('documents.certificates.store');
+    Route::post('/documentos/carpeta/{person}/certificados-na', [DocumentController::class, 'markCertificateNa'])->name('documents.certificates.na');
+    Route::post('/documentos/carpeta/{person}/cursos', [DocumentController::class, 'storeCourseBatch'])->name('documents.courses.batch');
+    Route::get('/documentos/carpeta/{person}/cursos/{batch}', [DocumentController::class, 'courseIndex'])->name('documents.courses.index');
+    Route::get('/documentos/carpeta/{person}/cursos/{batch}/ver', [DocumentController::class, 'previewCourseBatch'])->name('documents.courses.preview');
+    Route::post('/documentos/carpeta/{person}/cursos/{batch}', [DocumentController::class, 'storeCourseIndex'])->name('documents.courses.store');
+    Route::post('/documentos/carpeta/{person}/cursos-na', [DocumentController::class, 'markCourseNa'])->name('documents.courses.na');
     Route::get('/documentos/archivo/{document}/ver', [DocumentController::class, 'preview'])->name('documents.preview');
     Route::get('/documentos/archivo/{document}/descarga', [DocumentController::class, 'download'])->name('documents.download');
     Route::get('/parafiscales', [ParafiscalController::class, 'index'])->name('parafiscals.index');

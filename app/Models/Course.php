@@ -10,7 +10,15 @@ class Course extends Model
 {
     use BelongsToTenant;
 
-    protected $fillable = ['tenant_id', 'person_id', 'title', 'taken_on'];
+    protected $fillable = [
+        'tenant_id',
+        'person_id',
+        'title',
+        'provider',
+        'course_type',
+        'person_document_id',
+        'taken_on',
+    ];
 
     protected function casts(): array
     {
@@ -22,5 +30,10 @@ class Course extends Model
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class);
+    }
+
+    public function document(): BelongsTo
+    {
+        return $this->belongsTo(PersonDocument::class, 'person_document_id');
     }
 }

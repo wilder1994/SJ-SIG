@@ -19,6 +19,8 @@ final class StorePersonDocumentRequest extends FormRequest
         return [
             'folder' => ['required', Rule::enum(DocumentFolder::class)->except([
                 DocumentFolder::HojaVida,
+                DocumentFolder::Certificados,
+                DocumentFolder::Cursos,
                 DocumentFolder::Afiliaciones,
             ])],
             'file' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:12288'],

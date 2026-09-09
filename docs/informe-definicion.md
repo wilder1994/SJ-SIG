@@ -44,8 +44,8 @@ Pendiente: texto exacto del Anexo 7.4 (casillas, plazos, URL, evidencias) y rest
 | # | Requisito del pliego | Decisión de producto |
 |---|----------------------|----------------------|
 | 1 | Acceso por navegador web; control de roles; repositorio/gestor documental (HV, certificados, cursos, etc.) del personal de vigilancia **asociado al servicio u operación con sus clientes** | Obligatorio. Web HTTPS. Roles y policies. Documentos por persona y por contrato/cliente, no un archivo corporativo suelto. |
-| 2 | Buscador por carpetas o archivos; visualizar los archivos de cada carpeta del personal | Obligatorio. Catálogo de carpetas por persona (**Historia Laboral** y **Afiliaciones** indexadas, certificados, cursos, otros). Búsqueda + visor in-app. |
-| 3 | Visualizar cursos realizados por la empresa al personal: **título y fecha** | Obligatorio. Entidad mínima: título + fecha. Evidencia PDF opcional de refuerzo. |
+| 2 | Buscador por carpetas o archivos; visualizar los archivos de cada carpeta del personal | Obligatorio. Catálogo de carpetas por persona (**Historia Laboral**, **Certificados**, **Cursos y capacitación** y **Afiliaciones** indexadas, otros). Búsqueda + visor in-app. |
+| 3 | Visualizar cursos realizados por la empresa al personal: **título y fecha** | Obligatorio. Título + fecha + entidad que dicta + acta PDF indexada (catálogo Super + otro). |
 | 4 | Visualizar EPS, caja de compensación y pensión; visualizar documentos **parafiscales de la empresa** | Obligatorio. Dos capas: ficha de persona (importable) vs. parafiscales de SJ por periodo (no van en la ficha de empleado). |
 | 5 | **Llevar registro** y visualizar mantenimientos técnicos de infraestructura de seguridad electrónica | Obligatorio **en la plataforma** (alta + consulta + evidencias). El proceso operativo sigue en el área técnica de SJ. No es un CMMS interno. Origen v1: carga manual del técnico. |
 | 6 | **Control** y visualizar la cantidad de servicios prestados a cada **puesto de la Alcaldía** | Obligatorio. Contador por puesto y periodo (semana / mes / vigencia). “Alcaldía” es este cliente; el modelo es `puesto` del contrato. |
@@ -151,10 +151,10 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
-| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1) | Tarjeta PDF (arrastrar/pegar/seleccionar) → Indexar lote (miniaturas, páginas sueltas). Escáner pendiente |
-| Certificados | Aptitud, armas, escolta, policía, etc. | Documentos → carpeta |
-| Cursos | Título y fecha + acta/diploma PDF | Documentos → carpeta |
-| Afiliaciones | Checklist indexado de 8 tipos (estado, EPS, cesantías, pensiones, ARL, caja, vida, exequial) | Tarjeta PDF → Indexar lote (igual que Historia Laboral). Nombres EPS/AFP/caja/ARL siguen en la ficha |
+| **Historia Laboral** (antes “Hoja de vida”) | Checklist indexado de documentos de ingreso/selección (ver §6.1; 26 tipos). EPS/AFP/cesantías = certificados que **trae el empleado** | Tarjeta PDF → Indexar lote. Escáner pendiente |
+| **Certificados** | Exámenes ocupacionales (ver §6.3; 3 tipos) | Tarjeta PDF → Indexar lote |
+| **Cursos y capacitación** | Catálogo Superintendencia (25) + otro (ver §6.4). Fecha y entidad obligatorias | Tarjeta PDF → Indexar lote |
+| Afiliaciones | Afiliaciones que **hace la empresa** al contratar (8 tipos) | Tarjeta PDF → Indexar lote. Nombres EPS/AFP/caja/ARL siguen en la ficha |
 | Otros | Soportes que no caben arriba | Documentos → carpeta |
 
 Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
@@ -167,7 +167,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
-- En modo carga: tarjetas por carpeta (arrastrar, pegar o seleccionar). Historia Laboral y Afiliaciones: solo PDF → **Indexar**. El resto: PDF/JPG/PNG → **Subir**. Cursos (título + fecha) es tarjeta aparte.
+- En modo carga: tarjetas por carpeta (arrastrar, pegar o seleccionar). Historia Laboral, Certificados, Cursos y capacitación y Afiliaciones: solo PDF → **Indexar**. Otros: PDF/JPG/PNG → **Subir**.
 - Pantalla **Indexar lote**: dos columnas. Izquierda: contexto Historia Laboral + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF (scroll si no caben). Seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
@@ -194,19 +194,19 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 | 11 | Verificación de antecedentes | |
 | 12 | Licencia de conducción (categoría A2 / B1 según aplique) | |
 | 13 | Tarjeta de propiedad (licencia de tránsito) | |
-| 14 | SOAT | |
-| 15 | Revisión tecnomecánica | |
+| 14 | SOAT (Seguro Obligatorio de Accidentes de Tránsito) | |
+| 15 | Revisión tecno mecánica | |
 | 16 | Evaluación de conocimiento | Si aplica |
 | 17 | Entrevista selección | |
 | 18 | Prueba psicotécnica | |
 | 19 | Entrevista técnica de líder de área | |
 | 20 | Estudio de confiabilidad | Si aplica |
 | 21 | Prueba de poligrafía | Si aplica |
-| 22 | Documentos de beneficiarios | |
-| 23 | Certificación bancaria | |
-| 24 | Examen médico ocupacional de ingreso | |
-| 25 | Examen psicofísico | Si aplica |
-| 26 | Examen psicosensométrico | Si aplica |
+| 22 | Certificado de EPS | Del empleado, para contratar. Distinto de Afiliaciones |
+| 23 | Certificado de AFP | Del empleado, para contratar. Distinto de Afiliaciones |
+| 24 | Certificado de cesantías | Del empleado, para contratar. Distinto de Afiliaciones |
+| 25 | Documentos de beneficiarios | |
+| 26 | Certificación bancaria | |
 
 #### Capas técnicas
 
@@ -218,7 +218,7 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 
 ### 6.2 Afiliaciones — gestión documental (hecho)
 
-Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios (lista operativa SJ). Los nombres de EPS/AFP/caja/ARL siguen en la ficha; el resto solo existe como documento indexado.
+Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios: afiliaciones que **hace la empresa** al contratar. Los certificados homónimos de HV los **trae el empleado**; no se cruzan. Los nombres de EPS/AFP/caja/ARL siguen en la ficha.
 
 | # | Documento | Código |
 |---|-----------|--------|
@@ -231,7 +231,52 @@ Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios (
 | 7 | Afiliación seguro de vida | `afiliacion_seguro_vida` |
 | 8 | Afiliación o carta de desistimiento de seguro exequial | `afiliacion_exequial` |
 
-Tarjeta PDF → **Indexar lote** (mismas miniaturas y páginas sueltas). Consulta: **Listado** + ojo. N/A disponible en modo carga. Lotes se distinguen con `document_batches.folder` (`hv` / `afiliaciones`). Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
+Tarjeta PDF → **Indexar lote** (mismas miniaturas y páginas sueltas). Consulta: **Listado** + ojo. N/A disponible en modo carga. Lotes se distinguen con `document_batches.folder` (`hv` / `certificados` / `cursos` / `afiliaciones`). Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
+
+### 6.3 Certificados — gestión documental (hecho)
+
+Los exámenes ocupacionales salieron de Historia Laboral. Catálogo de **3 tipos**:
+
+| # | Documento | Código | Notas |
+|---|-----------|--------|-------|
+| 1 | Examen médico ocupacional de ingreso | `examen_medico_ingreso` | Obligatorio |
+| 2 | Examen psicofísico | `examen_psicofisico` | Si aplica |
+| 3 | Examen psicosensométrico | `examen_psicosensometrico` | Si aplica |
+
+Mismo indexador. Enum `CertificateDocumentType`. Demo: 1/3 (el PDF de aptitud se mapea al examen de ingreso). Documentos ya indexados en HV con esos códigos se reubican a `certificados` en la migración.
+
+### 6.4 Cursos y capacitación — gestión documental (hecho)
+
+Salieron de Historia Laboral. Carpeta indexada con catálogo Superintendencia (**25** tipos, *si aplica*) más **Otro** (repetible, nombre libre). Cada acta exige **fecha** y **entidad** que dicta el curso. Enum `CourseDocumentType`. Demo: 1/25 (especialización en manejo defensivo). Pliego ítem 3 (título + fecha) queda cubierto; la entidad es extra operativa.
+
+| # | Curso Superintendencia |
+|---|------------------------|
+| 1 | Curso de fundamentación en vigilancia |
+| 2 | Curso de reentrenamiento en vigilancia |
+| 3 | Especialización en seguridad comercial |
+| 4 | Especialización en entidades oficiales |
+| 5 | Especialización en grandes superficies |
+| 6 | Especialización en seguridad residencial |
+| 7 | Especialización en seguridad aeroportuaria |
+| 8 | Especialización en sector financiero |
+| 9 | Especialización en sector petrolero |
+| 10 | Especialización en sector industrial |
+| 11 | Especialización en sector hospitalario |
+| 12 | Curso de fundamentación en escolta |
+| 13 | Curso de reentrenamiento en escolta |
+| 14 | Especialización en escolta a personas |
+| 15 | Especialización en manejo defensivo |
+| 16 | Curso de fundamentación para supervisor |
+| 17 | Curso de reentrenamiento para supervisor |
+| 18 | Curso de fundamentación en operador de medios tecnológicos |
+| 19 | Curso de reentrenamiento en operador de medios tecnológicos |
+| 20 | Especialización para coordinador |
+| 21 | Especialización para instalador |
+| 22 | Seminario para directivos de seguridad privada |
+| 23 | Seminario para coordinadores de seguridad |
+| 24 | Seminario para jefes de recursos humanos en seguridad privada |
+| 25 | Curso de manejo y uso de armas de fuego |
+| — | Otro curso o capacitación (nombre libre; se pueden agregar varios) |
 
 ---
 
@@ -241,9 +286,9 @@ Tarjeta PDF → **Indexar lote** (mismas miniaturas y páginas sueltas). Consult
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Carga por tarjetas + indexador (Historia Laboral 26 + Afiliaciones 8). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Carga por tarjetas + indexador (HV 26 + Certificados 3 + Cursos 25+otro + Afiliaciones 8). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
-| 5 | Cursos (título + fecha + acta) | Hecho, en Documentos → carpeta |
+| 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho. Afiliaciones indexadas (8 tipos). PILA en Parafiscales |
 | 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
 | 8 | Servicios por puesto | Consulta seed |
@@ -260,14 +305,14 @@ Tarjeta PDF → **Indexar lote** (mismas miniaturas y páginas sueltas). Consult
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
-| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/afiliaciones`, `/cursos`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/certificados`, `/cursos`, `/afiliaciones`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
 Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
 
 ### Tablero (visión)
 
-- Semáforo documental (Historia Laboral y Afiliaciones indexadas, certificados, cursos, parafiscal del mes).  
+- Semáforo documental (Historia Laboral, Certificados, Cursos y capacitación y Afiliaciones indexadas, parafiscal del mes).  
 - Servicios por puesto (semana / mes / acumulado).  
 - Mantenimientos: últimos, vencidos, sin evidencia.  
 - Novedades abiertas vs. cerradas.  
@@ -280,7 +325,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreCourseService`, `StoreParafiscalService`. Historia Laboral y Afiliaciones: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; `document_batches.folder`; páginas en JSON). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Carpetas indexadas (HV, Certificados, Cursos y capacitación, Afiliaciones): `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; `document_batches.folder`; cursos: `taken_on` + `provider`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -290,7 +335,7 @@ Local aislado:
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches.folder`, columna `pages`). Demo: `php artisan migrate:fresh --seed`.
+- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches.folder`, cursos `provider`/`taken_on`). Demo: `php artisan migrate:fresh --seed`.
 - Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
 ### Usuarios y claves de prueba (demo local)
@@ -324,7 +369,7 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 - Expansión formal definitiva de “SIG” (Gestión vs. Gestión y Seguimiento).  
 - Segundo archivo vs. pantalla para asignar persona ↔ puesto.  
 - Hosting (Laragon/demo local vs. URL HTTPS de presentación).  
-- **Escáner** (Historia Laboral / Afiliaciones): agente Windows / TWAIN vs. solo digitalización externa + Subir (v1 solo Subir + indexar).
+- **Escáner** (carpetas indexadas): agente Windows / TWAIN vs. solo digitalización externa + Subir (v1 solo Subir + indexar).
 
 ---
 
@@ -349,3 +394,6 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Carga interna: tarjetas por carpeta (arrastrar, pegar o seleccionar; icono + nombre antes de confirmar). |
 | 2026-09-09 | Afiliaciones indexadas: EPS, AFP, cesantías y caja de compensación (mismo flujo que Historia Laboral). |
 | 2026-09-09 | Catálogo Afiliaciones ampliado a 8 tipos (estado, EPS, cesantías, pensiones, ARL, caja, vida, exequial). |
+| 2026-09-09 | Certificados indexados: exámenes médico, psicofísico y psicosensométrico (salen de Historia Laboral; HV queda en 23 tipos). |
+| 2026-09-09 | Historia Laboral actualizada a 27 tipos (cursos Supervigilancia + EPS/AFP/cesantías; estos últimos se comparten con Afiliaciones). |
+| 2026-09-09 | Cursos y capacitación indexados (catálogo Super 25 + otro). HV queda en 26. EPS/AFP/cesantías de HV (empleado) ya no se cruzan con Afiliaciones (empresa). |

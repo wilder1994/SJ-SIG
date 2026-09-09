@@ -24,6 +24,14 @@
                     <label class="field">Nombre
                         <input id="slice-name" required>
                     </label>
+                    <div id="course-fields" @if(! ($historyMeta['course_fields'] ?? false)) hidden @endif>
+                        <label class="field">Fecha del curso
+                            <input type="date" id="slice-taken-on">
+                        </label>
+                        <label class="field">Entidad que dicta el curso
+                            <input id="slice-provider">
+                        </label>
+                    </div>
                     <div class="index-composer-actions">
                         <button class="btn ghost" type="button" id="add-slice">Agregar a la lista</button>
                         <button class="btn" type="submit">Guardar indexación</button>

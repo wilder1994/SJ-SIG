@@ -28,11 +28,11 @@ enum LaborHistoryDocumentType: string
     case EntrevistaTecnica = 'entrevista_tecnica';
     case EstudioConfiabilidad = 'estudio_confiabilidad';
     case PruebaPoligrafia = 'prueba_poligrafia';
+    case CertificadoEps = 'certificado_eps';
+    case CertificadoAfp = 'certificado_afp';
+    case CertificadoCesantias = 'certificado_cesantias';
     case DocumentosBeneficiarios = 'documentos_beneficiarios';
     case CertificacionBancaria = 'certificacion_bancaria';
-    case ExamenMedicoIngreso = 'examen_medico_ingreso';
-    case ExamenPsicofisico = 'examen_psicofisico';
-    case ExamenPsicosensometrico = 'examen_psicosensometrico';
 
     public function label(): string
     {
@@ -48,21 +48,21 @@ enum LaborHistoryDocumentType: string
             self::CertificacionesLaborales => 'Certificaciones laborales con verificación de referencias',
             self::LibretaMilitar => 'Libreta militar',
             self::VerificacionAntecedentes => 'Verificación de antecedentes',
-            self::LicenciaConduccion => 'Licencia de conducción (A2 / B1)',
+            self::LicenciaConduccion => 'Licencia de conducción (categoría A2 / B1 según aplique)',
             self::TarjetaPropiedad => 'Tarjeta de propiedad (licencia de tránsito)',
-            self::Soat => 'SOAT',
-            self::RevisionTecnomecanica => 'Revisión tecnomecánica',
+            self::Soat => 'SOAT (Seguro Obligatorio de Accidentes de Tránsito)',
+            self::RevisionTecnomecanica => 'Revisión tecno mecánica',
             self::EvaluacionConocimiento => 'Evaluación de conocimiento',
             self::EntrevistaSeleccion => 'Entrevista selección',
             self::PruebaPsicotecnica => 'Prueba psicotécnica',
             self::EntrevistaTecnica => 'Entrevista técnica de líder de área',
             self::EstudioConfiabilidad => 'Estudio de confiabilidad',
             self::PruebaPoligrafia => 'Prueba de poligrafía',
+            self::CertificadoEps => 'Certificado de EPS',
+            self::CertificadoAfp => 'Certificado de AFP',
+            self::CertificadoCesantias => 'Certificado de cesantías',
             self::DocumentosBeneficiarios => 'Documentos de beneficiarios',
             self::CertificacionBancaria => 'Certificación bancaria',
-            self::ExamenMedicoIngreso => 'Examen médico ocupacional de ingreso',
-            self::ExamenPsicofisico => 'Examen psicofísico',
-            self::ExamenPsicosensometrico => 'Examen psicosensométrico',
         };
     }
 
@@ -74,9 +74,7 @@ enum LaborHistoryDocumentType: string
             self::ResolucionRetiroFuerza,
             self::EvaluacionConocimiento,
             self::EstudioConfiabilidad,
-            self::PruebaPoligrafia,
-            self::ExamenPsicofisico,
-            self::ExamenPsicosensometrico => DocumentRequirement::IfApplies,
+            self::PruebaPoligrafia => DocumentRequirement::IfApplies,
             default => DocumentRequirement::Required,
         };
     }
@@ -98,18 +96,18 @@ enum LaborHistoryDocumentType: string
             self::LicenciaConduccion => 'Licencia_conduccion',
             self::TarjetaPropiedad => 'Tarjeta_propiedad',
             self::Soat => 'SOAT',
-            self::RevisionTecnomecanica => 'Revision_tecnomecanica',
+            self::RevisionTecnomecanica => 'Revision_tecno_mecanica',
             self::EvaluacionConocimiento => 'Evaluacion_conocimiento',
             self::EntrevistaSeleccion => 'Entrevista_seleccion',
             self::PruebaPsicotecnica => 'Prueba_psicotecnica',
             self::EntrevistaTecnica => 'Entrevista_tecnica',
             self::EstudioConfiabilidad => 'Estudio_confiabilidad',
             self::PruebaPoligrafia => 'Prueba_poligrafia',
+            self::CertificadoEps => 'Certificado_EPS',
+            self::CertificadoAfp => 'Certificado_AFP',
+            self::CertificadoCesantias => 'Certificado_cesantias',
             self::DocumentosBeneficiarios => 'Documentos_beneficiarios',
             self::CertificacionBancaria => 'Certificacion_bancaria',
-            self::ExamenMedicoIngreso => 'Examen_medico_ingreso',
-            self::ExamenPsicofisico => 'Examen_psicofisico',
-            self::ExamenPsicosensometrico => 'Examen_psicosensometrico',
         };
     }
 

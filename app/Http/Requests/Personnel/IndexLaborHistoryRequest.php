@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Personnel;
 
+use App\Enums\DocumentFolder;
 use App\Models\DocumentBatch;
 use App\Support\Personnel\IndexedFolder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -24,6 +25,8 @@ final class IndexLaborHistoryRequest extends FormRequest
             'slices.*.display_name' => ['required', 'string', 'max:180'],
             'slices.*.pages' => ['required', 'array', 'min:1'],
             'slices.*.pages.*' => ['required', 'integer', 'min:1'],
+            'slices.*.taken_on' => ['nullable', 'date'],
+            'slices.*.provider' => ['nullable', 'string', 'max:180'],
         ];
     }
 
@@ -42,6 +45,14 @@ final class IndexLaborHistoryRequest extends FormRequest
                         IndexedFolder::resolve($folder, (string) $slice['document_type']);
                     } catch (InvalidArgumentException) {
                         $validator->errors()->add('slices.'.$index.'.document_type', 'Tipo no válido para esta carpeta.');
+                    }
+                }
+                if ($folder === DocumentFolder::Cursos) {
+                    if (blank($slice['taken_on'] ?? null)) {
+                        $validator->errors()->add('slices.'.$index.'.taken_on', 'La fecha del curso es obligatoria.');
+                    }
+                    if (blank($slice['provider'] ?? null)) {
+                        $validator->errors()->add('slices.'.$index.'.provider', 'La entidad que dicta el curso es obligatoria.');
                     }
                 }
             }

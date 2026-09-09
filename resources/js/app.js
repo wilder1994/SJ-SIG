@@ -273,6 +273,8 @@ document.addEventListener('click', (event) => {
     const hint = document.getElementById('page-hint');
     const typeSelect = document.getElementById('slice-type');
     const nameInput = document.getElementById('slice-name');
+    const takenOnInput = document.getElementById('slice-taken-on');
+    const providerInput = document.getElementById('slice-provider');
     if (!metaNode || !form || !rows || !addBtn || !thumbs || !typeSelect || !nameInput) {
         return;
     }
@@ -356,13 +358,23 @@ document.addEventListener('click', (event) => {
             }
             return;
         }
+        if (meta.course_fields && (!takenOnInput?.value || !providerInput?.value.trim())) {
+            if (hint) {
+                hint.textContent = 'Indique la fecha y la entidad que dicta el curso.';
+            }
+            return;
+        }
         const index = sliceCount;
         sliceCount += 1;
         const wrap = document.createElement('div');
         wrap.className = 'slice-row';
         const pageInputs = pages.map((page) => `<input type="hidden" name="slices[${index}][pages][]" value="${page}">`).join('');
+        const courseInputs = meta.course_fields
+            ? `<input type="hidden" name="slices[${index}][taken_on]" value="${takenOnInput.value}"><input type="hidden" name="slices[${index}][provider]">`
+            : '';
         wrap.innerHTML = `
             ${pageInputs}
+            ${courseInputs}
             <input type="hidden" name="slices[${index}][document_type]" value="${chosen.value}">
             <input type="hidden" name="slices[${index}][display_name]">
             <div>
@@ -373,8 +385,14 @@ document.addEventListener('click', (event) => {
             <button class="btn ghost" type="button" data-remove-slice>Quitar</button>
         `;
         wrap.querySelector('input[name$="[display_name]"]').value = nameInput.value;
+        if (meta.course_fields) {
+            wrap.querySelector('input[name$="[provider]"]').value = providerInput.value.trim();
+        }
         wrap.querySelector('[data-slice-label]').textContent = chosen.label;
-        wrap.querySelector('[data-slice-name]').textContent = nameInput.value;
+        const extra = meta.course_fields
+            ? ` · ${providerInput.value.trim()} · ${takenOnInput.value}`
+            : '';
+        wrap.querySelector('[data-slice-name]').textContent = nameInput.value + extra;
         wrap.querySelector('[data-remove-slice]')?.addEventListener('click', () => wrap.remove());
         rows.appendChild(wrap);
         wrap.scrollIntoView({ block: 'nearest', behavior: 'smooth' });

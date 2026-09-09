@@ -3,6 +3,8 @@
 namespace App\Support\Personnel;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\DocumentRequirement;
 use App\Enums\LaborHistoryDocumentType;
@@ -11,7 +13,7 @@ use App\Models\PersonDocument;
 
 final class FolderChecklist
 {
-    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType, document: ?PersonDocument, status: string}> */
+    /** @return list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, document: ?PersonDocument, status: string}> */
     public static function for(Person $person, DocumentFolder $folder): array
     {
         $files = $person->documents
@@ -20,7 +22,18 @@ final class FolderChecklist
 
         $rows = [];
         foreach (IndexedFolder::types($folder) as $type) {
+            if ($type instanceof CourseDocumentType && $type->isRepeatable()) {
+                continue;
+            }
+
             $match = $files->first(fn (PersonDocument $doc) => $doc->document_type === $type->value);
+
+            if ($match === null && $folder === DocumentFolder::Certificados) {
+                $match = $person->documents->first(
+                    fn (PersonDocument $doc) => $doc->folder === DocumentFolder::HojaVida
+                        && $doc->document_type === $type->value,
+                );
+            }
 
             if ($match === null) {
                 $match = self::legacyMatch($folder, $type, $files);
@@ -40,6 +53,19 @@ final class FolderChecklist
             ];
         }
 
+        if ($folder === DocumentFolder::Cursos) {
+            foreach ($files as $file) {
+                if ($file->document_type !== CourseDocumentType::Otro->value || ! $file->hasFile()) {
+                    continue;
+                }
+                $rows[] = [
+                    'type' => CourseDocumentType::Otro,
+                    'document' => $file,
+                    'status' => 'loaded',
+                ];
+            }
+        }
+
         return $rows;
     }
 
@@ -47,15 +73,16 @@ final class FolderChecklist
     public static function summary(Person $person, DocumentFolder $folder): array
     {
         $rows = self::for($person, $folder);
+        $catalog = array_filter($rows, fn (array $row) => ! ($row['type'] instanceof CourseDocumentType && $row['type']->isRepeatable()));
         $loaded = count(array_filter($rows, fn (array $row) => $row['status'] === 'loaded'));
-        $required = count(array_filter($rows, fn (array $row) => $row['type']->requirement() === DocumentRequirement::Required));
+        $required = count(array_filter($catalog, fn (array $row) => $row['type']->requirement() === DocumentRequirement::Required));
         $requiredLoaded = count(array_filter(
-            $rows,
+            $catalog,
             fn (array $row) => $row['type']->requirement() === DocumentRequirement::Required && $row['status'] === 'loaded',
         ));
 
         return [
-            'total' => count($rows),
+            'total' => count($catalog),
             'loaded' => $loaded,
             'required' => $required,
             'required_loaded' => $requiredLoaded,
@@ -65,10 +92,37 @@ final class FolderChecklist
     /**
      * @param  \Illuminate\Support\Collection<int, PersonDocument>  $files
      */
-    private static function legacyMatch(DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType $type, $files): ?PersonDocument
-    {
+    private static function legacyMatch(
+        DocumentFolder $folder,
+        LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType $type,
+        $files,
+    ): ?PersonDocument {
         if ($folder === DocumentFolder::HojaVida && $type === LaborHistoryDocumentType::HojaVida) {
             return $files->first(fn (PersonDocument $doc) => $doc->document_type === null && $doc->hasFile());
+        }
+
+        if ($folder === DocumentFolder::Certificados && $type instanceof CertificateDocumentType) {
+            $needle = match ($type) {
+                CertificateDocumentType::ExamenMedicoIngreso => 'aptitud',
+                CertificateDocumentType::ExamenPsicofisico => 'psicofis',
+                CertificateDocumentType::ExamenPsicosensometrico => 'psicosenso',
+            };
+
+            return $files->first(function (PersonDocument $doc) use ($needle): bool {
+                return $doc->document_type === null
+                    && $doc->hasFile()
+                    && str_contains(strtolower($doc->original_name), $needle);
+            });
+        }
+
+        if ($folder === DocumentFolder::Cursos && $type === CourseDocumentType::EspecializacionManejoDefensivo) {
+            return $files->first(function (PersonDocument $doc): bool {
+                $name = strtolower($doc->original_name);
+
+                return $doc->document_type === null
+                    && $doc->hasFile()
+                    && str_contains($name, 'defens');
+            });
         }
 
         if ($folder !== DocumentFolder::Afiliaciones || ! $type instanceof AffiliationDocumentType) {

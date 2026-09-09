@@ -3,15 +3,25 @@
 namespace App\Services\Personnel;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Models\Course;
 use App\Models\Person;
 use App\Models\PersonDocument;
 
 final class MarkLaborHistoryNotApplicableService
 {
-    public function execute(Person $person, DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType $type): PersonDocument
+    public function execute(Person $person, DocumentFolder $folder, LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType $type): PersonDocument
     {
+        if ($type instanceof CourseDocumentType) {
+            Course::query()
+                ->where('person_id', $person->id)
+                ->where('course_type', $type->value)
+                ->delete();
+        }
+
         PersonDocument::query()
             ->where('person_id', $person->id)
             ->where('folder', $folder)

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Enums\DocumentFolder;
 use App\Http\Requests\Personnel\IndexLaborHistoryRequest;
 use App\Http\Requests\Personnel\MarkLaborHistoryNaRequest;
-use App\Http\Requests\Personnel\StoreCourseRequest;
 use App\Http\Requests\Personnel\StoreLaborHistoryBatchRequest;
 use App\Http\Requests\Personnel\StorePersonDocumentRequest;
 use App\Models\Contract;
@@ -15,13 +14,11 @@ use App\Models\PersonDocument;
 use App\Repositories\Contracts\PersonRepositoryInterface;
 use App\Services\Personnel\IndexLaborHistoryPdfService;
 use App\Services\Personnel\MarkLaborHistoryNotApplicableService;
-use App\Services\Personnel\StoreCourseService;
 use App\Services\Personnel\StoreLaborHistoryBatchService;
 use App\Services\Personnel\StorePersonDocumentService;
 use App\Support\Files\StoredFileResponder;
 use App\Support\Personnel\FolderChecklist;
 use App\Support\Personnel\IndexedFolder;
-use App\Support\Personnel\LaborHistoryChecklist;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -32,7 +29,6 @@ final class DocumentController extends Controller
     public function __construct(
         private readonly PersonRepositoryInterface $people,
         private readonly StorePersonDocumentService $storeDocument,
-        private readonly StoreCourseService $courses,
         private readonly StoreLaborHistoryBatchService $historyBatch,
         private readonly IndexLaborHistoryPdfService $historyIndex,
         private readonly MarkLaborHistoryNotApplicableService $historyNa,
@@ -54,13 +50,21 @@ final class DocumentController extends Controller
     {
         $model = $this->personInContract($request, $person);
 
+        $indexedChecklists = [];
+        foreach ([DocumentFolder::HojaVida, DocumentFolder::Certificados, DocumentFolder::Cursos, DocumentFolder::Afiliaciones] as $folder) {
+            $indexedChecklists[] = [
+                'folder' => $folder,
+                'rows' => FolderChecklist::for($model, $folder),
+                'summary' => FolderChecklist::summary($model, $folder),
+                'panel' => $folder->value.'-list',
+                'na' => $folder->naRoute(),
+            ];
+        }
+
         return view('documents.folder', [
             'person' => $model,
             'cargar' => $request->boolean('cargar') && (auth()->user()?->role->canUploadEvidence() ?? false),
-            'historyRows' => LaborHistoryChecklist::for($model),
-            'historySummary' => LaborHistoryChecklist::summary($model),
-            'affiliationRows' => FolderChecklist::for($model, DocumentFolder::Afiliaciones),
-            'affiliationSummary' => FolderChecklist::summary($model, DocumentFolder::Afiliaciones),
+            'indexedChecklists' => $indexedChecklists,
         ]);
     }
 
@@ -114,6 +118,32 @@ final class DocumentController extends Controller
         return redirect()->route('documents.affiliations.index', ['person' => $model, 'batch' => $batch]);
     }
 
+    public function storeCertificateBatch(StoreLaborHistoryBatchRequest $request, int $person): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $model = $this->personInContract($request, $person);
+        $file = $request->file('file');
+        abort_if($file === null, 422);
+
+        $batch = $this->historyBatch->execute($contract, $model, $file, DocumentFolder::Certificados);
+
+        return redirect()->route('documents.certificates.index', ['person' => $model, 'batch' => $batch]);
+    }
+
+    public function storeCourseBatch(StoreLaborHistoryBatchRequest $request, int $person): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $model = $this->personInContract($request, $person);
+        $file = $request->file('file');
+        abort_if($file === null, 422);
+
+        $batch = $this->historyBatch->execute($contract, $model, $file, DocumentFolder::Cursos);
+
+        return redirect()->route('documents.courses.index', ['person' => $model, 'batch' => $batch]);
+    }
+
     public function historyIndex(Request $request, int $person, int $batch): View
     {
         return $this->showIndexer($request, $person, $batch, DocumentFolder::HojaVida);
@@ -122,6 +152,16 @@ final class DocumentController extends Controller
     public function affiliationIndex(Request $request, int $person, int $batch): View
     {
         return $this->showIndexer($request, $person, $batch, DocumentFolder::Afiliaciones);
+    }
+
+    public function certificateIndex(Request $request, int $person, int $batch): View
+    {
+        return $this->showIndexer($request, $person, $batch, DocumentFolder::Certificados);
+    }
+
+    public function courseIndex(Request $request, int $person, int $batch): View
+    {
+        return $this->showIndexer($request, $person, $batch, DocumentFolder::Cursos);
     }
 
     public function storeHistoryIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
@@ -134,6 +174,16 @@ final class DocumentController extends Controller
         return $this->persistIndex($request, $person, $batch, DocumentFolder::Afiliaciones);
     }
 
+    public function storeCertificateIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
+    {
+        return $this->persistIndex($request, $person, $batch, DocumentFolder::Certificados);
+    }
+
+    public function storeCourseIndex(IndexLaborHistoryRequest $request, int $person, int $batch): RedirectResponse
+    {
+        return $this->persistIndex($request, $person, $batch, DocumentFolder::Cursos);
+    }
+
     public function markHistoryNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
     {
         return $this->markIndexedNa($request, $person, DocumentFolder::HojaVida);
@@ -144,18 +194,14 @@ final class DocumentController extends Controller
         return $this->markIndexedNa($request, $person, DocumentFolder::Afiliaciones);
     }
 
-    public function storeCourse(StoreCourseRequest $request, int $person): RedirectResponse
+    public function markCertificateNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
     {
-        $model = $this->personInContract($request, $person);
-        $this->courses->execute(
-            $model,
-            $request->string('title')->toString(),
-            $request->date('taken_on')->toDateString(),
-        );
+        return $this->markIndexedNa($request, $person, DocumentFolder::Certificados);
+    }
 
-        return redirect()
-            ->route('documents.folder', ['person' => $model, 'cargar' => 1])
-            ->with('status', 'Curso registrado. El acta PDF se carga en la carpeta Cursos.');
+    public function markCourseNa(MarkLaborHistoryNaRequest $request, int $person): RedirectResponse
+    {
+        return $this->markIndexedNa($request, $person, DocumentFolder::Cursos);
     }
 
     public function previewBatch(Request $request, int $person, int $batch): StreamedResponse
@@ -166,6 +212,16 @@ final class DocumentController extends Controller
     public function previewAffiliationBatch(Request $request, int $person, int $batch): StreamedResponse
     {
         return $this->streamBatch($request, $person, $batch, DocumentFolder::Afiliaciones);
+    }
+
+    public function previewCertificateBatch(Request $request, int $person, int $batch): StreamedResponse
+    {
+        return $this->streamBatch($request, $person, $batch, DocumentFolder::Certificados);
+    }
+
+    public function previewCourseBatch(Request $request, int $person, int $batch): StreamedResponse
+    {
+        return $this->streamBatch($request, $person, $batch, DocumentFolder::Cursos);
     }
 
     public function preview(Request $request, int $document): StreamedResponse
@@ -190,12 +246,8 @@ final class DocumentController extends Controller
         abort_unless(auth()->user()?->role->canUploadEvidence() ?? false, 403);
         $lote = $this->batchForPerson($model, $batch, $folder);
 
-        $preview = $folder === DocumentFolder::Afiliaciones
-            ? route('documents.affiliations.preview', ['person' => $model, 'batch' => $lote])
-            : route('documents.history.preview', ['person' => $model, 'batch' => $lote]);
-        $store = $folder === DocumentFolder::Afiliaciones
-            ? route('documents.affiliations.store', ['person' => $model, 'batch' => $lote])
-            : route('documents.history.store', ['person' => $model, 'batch' => $lote]);
+        $preview = route((string) $folder->previewRoute(), ['person' => $model, 'batch' => $lote]);
+        $store = route((string) $folder->storeIndexRoute(), ['person' => $model, 'batch' => $lote]);
 
         return view('documents.index-batch', [
             'person' => $model,
@@ -206,11 +258,13 @@ final class DocumentController extends Controller
             'historyMeta' => [
                 'page_count' => $lote->page_count,
                 'preview_url' => $preview,
+                'course_fields' => $folder === DocumentFolder::Cursos,
                 'types' => collect(IndexedFolder::types($folder))->map(fn ($type) => [
                     'value' => $type->value,
                     'label' => $type->label(),
                     'name' => $type->suggestedName($model),
                     'req' => $type->requirement()->label(),
+                    'other' => method_exists($type, 'isRepeatable') && $type->isRepeatable(),
                 ])->values(),
             ],
         ]);
@@ -236,6 +290,8 @@ final class DocumentController extends Controller
                 'type' => IndexedFolder::resolve($folder, $row['document_type']),
                 'display_name' => $row['display_name'],
                 'pages' => $pages,
+                'taken_on' => $row['taken_on'] ?? null,
+                'provider' => $row['provider'] ?? null,
             ];
         }
 

@@ -3,8 +3,11 @@
 namespace App\Services\Personnel;
 
 use App\Enums\AffiliationDocumentType;
+use App\Enums\CertificateDocumentType;
+use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Models\Course;
 use App\Models\DocumentBatch;
 use App\Models\Person;
 use App\Models\PersonDocument;
@@ -17,7 +20,7 @@ use setasign\Fpdi\Fpdi;
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType, display_name: string, pages: list<int>}>  $slices
+     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -35,7 +38,7 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType, display_name: string, pages: list<int>} $slice */
+    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|CourseDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
         $pages = $this->normalizePages($slice['pages'], $batch->page_count);
@@ -59,13 +62,20 @@ final class IndexLaborHistoryPdfService
             $name .= '.pdf';
         }
 
-        PersonDocument::query()
-            ->where('person_id', $person->id)
-            ->where('folder', $folder)
-            ->where('document_type', $slice['type']->value)
-            ->delete();
+        $repeatable = $slice['type'] instanceof CourseDocumentType && $slice['type']->isRepeatable();
+        if (! $repeatable) {
+            Course::query()
+                ->where('person_id', $person->id)
+                ->where('course_type', $slice['type']->value)
+                ->delete();
+            PersonDocument::query()
+                ->where('person_id', $person->id)
+                ->where('folder', $folder)
+                ->where('document_type', $slice['type']->value)
+                ->delete();
+        }
 
-        return PersonDocument::query()->create([
+        $document = PersonDocument::query()->create([
             'tenant_id' => $person->tenant_id,
             'person_id' => $person->id,
             'folder' => $folder,
@@ -79,7 +89,25 @@ final class IndexLaborHistoryPdfService
             'disk_path' => $relative,
             'mime' => 'application/pdf',
             'size_bytes' => is_file($absolute) ? (int) filesize($absolute) : 0,
+            'taken_on' => $slice['taken_on'] ?? null,
+            'provider' => $slice['provider'] ?? null,
         ]);
+
+        if ($slice['type'] instanceof CourseDocumentType) {
+            Course::query()->create([
+                'tenant_id' => $person->tenant_id,
+                'person_id' => $person->id,
+                'title' => $slice['type']->isRepeatable()
+                    ? trim((string) preg_replace('/\.pdf$/i', '', $name))
+                    : $slice['type']->label(),
+                'provider' => $slice['provider'] ?? null,
+                'course_type' => $slice['type']->value,
+                'person_document_id' => $document->id,
+                'taken_on' => $slice['taken_on'] ?? now()->toDateString(),
+            ]);
+        }
+
+        return $document;
     }
 
     /**
