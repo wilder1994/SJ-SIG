@@ -271,9 +271,13 @@ document.addEventListener('click', (event) => {
     const addBtn = document.getElementById('add-slice');
     const thumbs = document.getElementById('page-thumbs');
     const hint = document.getElementById('page-hint');
+    const folderSelect = document.getElementById('slice-folder');
     const typeSelect = document.getElementById('slice-type');
+    const typeField = document.getElementById('type-field');
+    const tipoField = document.getElementById('tipo-field');
     const tipoInput = document.getElementById('slice-tipo');
     const nameInput = document.getElementById('slice-name');
+    const courseFields = document.getElementById('course-fields');
     const takenOnInput = document.getElementById('slice-taken-on');
     const providerInput = document.getElementById('slice-provider');
     if (!metaNode || !form || !rows || !addBtn || !thumbs || !typeSelect || !nameInput) {
@@ -281,17 +285,45 @@ document.addEventListener('click', (event) => {
     }
 
     const meta = JSON.parse(metaNode.textContent || '{}');
-    const types = meta.types || [];
+    const catalogs = meta.catalogs || [];
     const selected = new Set();
     let lastPage = null;
     let sliceCount = 0;
 
-    if (meta.other_fields) {
-        typeSelect.innerHTML = `<option value="${meta.other_type}">Otro soporte</option>`;
-    } else {
-        typeSelect.innerHTML = types.map((type) => (
-            `<option value="${type.value}">${type.label} (${type.req})</option>`
+    if (folderSelect) {
+        folderSelect.innerHTML = catalogs.map((catalog) => (
+            `<option value="${catalog.value}">${catalog.label}</option>`
         )).join('');
+    }
+
+    function currentCatalog() {
+        return catalogs.find((catalog) => catalog.value === folderSelect?.value) || catalogs[0] || null;
+    }
+
+    function applyCatalog() {
+        const catalog = currentCatalog();
+        const otherOn = Boolean(catalog?.other_fields);
+        const courseOn = Boolean(catalog?.course_fields);
+        if (typeField) {
+            typeField.hidden = otherOn;
+        }
+        if (tipoField) {
+            tipoField.hidden = !otherOn;
+        }
+        if (courseFields) {
+            courseFields.hidden = !courseOn;
+        }
+        if (otherOn) {
+            typeSelect.innerHTML = `<option value="${meta.other_type}">Otro soporte</option>`;
+        } else {
+            typeSelect.innerHTML = (catalog?.types || []).map((type) => (
+                `<option value="${type.value}">${type.label} (${type.req})</option>`
+            )).join('');
+        }
+        if (tipoInput) {
+            tipoInput.value = '';
+        }
+        syncName();
     }
 
     function slugTipo(text) {
@@ -328,20 +360,22 @@ document.addEventListener('click', (event) => {
     }
 
     function syncName() {
-        if (meta.other_fields) {
+        const catalog = currentCatalog();
+        if (catalog?.other_fields) {
             const slug = slugTipo(tipoInput?.value || '');
             nameInput.value = slug ? slug + (meta.name_suffix || '') : '';
             return;
         }
-        const chosen = types.find((type) => type.value === typeSelect.value);
+        const chosen = (catalog?.types || []).find((type) => type.value === typeSelect.value);
         if (chosen) {
             nameInput.value = chosen.name;
         }
     }
 
+    folderSelect?.addEventListener('change', applyCatalog);
     typeSelect.addEventListener('change', syncName);
     tipoInput?.addEventListener('input', syncName);
-    syncName();
+    applyCatalog();
 
     function selectedPages() {
         return [...selected].sort((a, b) => a - b);
@@ -395,21 +429,24 @@ document.addEventListener('click', (event) => {
 
     function addSlice() {
         const pages = selectedPages();
-        const chosen = types.find((type) => type.value === typeSelect.value)
-            || (meta.other_fields ? { value: meta.other_type, label: (tipoInput?.value || '').trim() } : null);
-        if (!chosen || pages.length === 0) {
+        const catalog = currentCatalog();
+        const otherOn = Boolean(catalog?.other_fields);
+        const courseOn = Boolean(catalog?.course_fields);
+        const chosen = (catalog?.types || []).find((type) => type.value === typeSelect.value)
+            || (otherOn ? { value: meta.other_type, label: (tipoInput?.value || '').trim() } : null);
+        if (!catalog || !chosen || pages.length === 0) {
             if (hint) {
                 hint.textContent = 'Seleccione al menos una página antes de agregar.';
             }
             return;
         }
-        if (meta.course_fields && (!takenOnInput?.value || !providerInput?.value.trim())) {
+        if (courseOn && (!takenOnInput?.value || !providerInput?.value.trim())) {
             if (hint) {
                 hint.textContent = 'Indique la fecha y la entidad que dicta el curso.';
             }
             return;
         }
-        if (meta.other_fields) {
+        if (otherOn) {
             const tipo = (tipoInput?.value || '').trim();
             if (!tipo) {
                 if (hint) {
@@ -417,7 +454,9 @@ document.addEventListener('click', (event) => {
                 }
                 return;
             }
-            if ((meta.existing_count || 0) + rows.children.length + 1 > (meta.max_others || 20)) {
+            const othersInList = [...rows.querySelectorAll('input[name$="[folder]"]')]
+                .filter((input) => input.value === 'otros').length;
+            if ((meta.existing_count || 0) + othersInList + 1 > (meta.max_others || 20)) {
                 if (hint) {
                     hint.textContent = `Solo se permiten ${meta.max_others || 20} soportes en Otros por trabajador.`;
                 }
@@ -436,16 +475,17 @@ document.addEventListener('click', (event) => {
         const wrap = document.createElement('div');
         wrap.className = 'slice-row';
         const pageInputs = pages.map((page) => `<input type="hidden" name="slices[${index}][pages][]" value="${page}">`).join('');
-        const courseInputs = meta.course_fields
+        const courseInputs = courseOn
             ? `<input type="hidden" name="slices[${index}][taken_on]" value="${takenOnInput.value}"><input type="hidden" name="slices[${index}][provider]">`
             : '';
-        const tipoField = meta.other_fields
+        const tipoHidden = otherOn
             ? `<input type="hidden" name="slices[${index}][tipo]" value="">`
             : '';
         wrap.innerHTML = `
             ${pageInputs}
             ${courseInputs}
-            ${tipoField}
+            ${tipoHidden}
+            <input type="hidden" name="slices[${index}][folder]" value="${catalog.value}">
             <input type="hidden" name="slices[${index}][document_type]" value="${chosen.value}">
             <input type="hidden" name="slices[${index}][display_name]">
             <div>
@@ -456,16 +496,16 @@ document.addEventListener('click', (event) => {
             <button class="btn ghost" type="button" data-remove-slice>Quitar</button>
         `;
         wrap.querySelector('input[name$="[display_name]"]').value = nameInput.value;
-        if (meta.course_fields) {
+        if (courseOn) {
             wrap.querySelector('input[name$="[provider]"]').value = providerInput.value.trim();
         }
-        if (meta.other_fields) {
+        if (otherOn) {
             wrap.querySelector('input[name$="[tipo]"]').value = (tipoInput?.value || '').trim();
         }
-        wrap.querySelector('[data-slice-label]').textContent = meta.other_fields
-            ? (tipoInput?.value || '').trim()
-            : chosen.label;
-        const extra = meta.course_fields
+        wrap.querySelector('[data-slice-label]').textContent = otherOn
+            ? `${catalog.label} · ${(tipoInput?.value || '').trim()}`
+            : `${catalog.label} · ${chosen.label}`;
+        const extra = courseOn
             ? ` · ${providerInput.value.trim()} · ${takenOnInput.value}`
             : '';
         wrap.querySelector('[data-slice-name]').textContent = nameInput.value + extra;

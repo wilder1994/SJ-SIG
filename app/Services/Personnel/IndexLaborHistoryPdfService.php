@@ -22,7 +22,7 @@ use setasign\Fpdi\Fpdi;
 final class IndexLaborHistoryPdfService
 {
     /**
-     * @param  list<array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string}>  $slices
+     * @param  list<array{folder?: DocumentFolder, type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string}>  $slices
      * @return list<PersonDocument>
      */
     public function execute(DocumentBatch $batch, Person $person, array $slices): array
@@ -40,11 +40,11 @@ final class IndexLaborHistoryPdfService
         return $created;
     }
 
-    /** @param array{type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string} $slice */
+    /** @param array{folder?: DocumentFolder, type: LaborHistoryDocumentType|AffiliationDocumentType|CertificateDocumentType|ContractingDocumentType|CourseDocumentType|OtherDocumentType, display_name: string, pages: list<int>, taken_on?: ?string, provider?: ?string, tipo?: ?string} $slice */
     private function storeSlice(DocumentBatch $batch, Person $person, string $source, array $slice): PersonDocument
     {
         $pages = $this->normalizePages($slice['pages'], $batch->page_count);
-        $folder = $batch->folder ?? DocumentFolder::HojaVida;
+        $folder = $slice['folder'] ?? $batch->folder ?? DocumentFolder::HojaVida;
 
         $relative = sprintf(
             'tenants/%d/people/%d/%s/%s-%s.pdf',

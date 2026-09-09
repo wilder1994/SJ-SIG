@@ -23,67 +23,33 @@
 @if($cargar)
 <section class="upload-deck" style="margin-bottom:12px">
     <p class="kicker">Carga (usuario interno)</p>
-    <p class="muted" style="margin-bottom:12px">Arrastre, pegue o seleccione. Todas las carpetas pasan al indexador (PDF). El escáner queda pendiente.</p>
+    <p class="muted" style="margin-bottom:12px">Un PDF por lote. En el indexador elige carpeta y tipo por grupo de páginas. El escáner queda pendiente.</p>
     <div class="drop-grid">
-        @foreach(\App\Enums\DocumentFolder::cases() as $folder)
-            @continue(! $folder->isIndexed())
-            <form class="drop-card" method="post" action="{{ route($folder->batchRoute(), $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,application/pdf" data-max="51200">
-                @csrf
-                <p class="drop-card-title">{{ $folder->label() }}</p>
-                <p class="muted drop-card-hint">{{ $folder->hint() }}</p>
-                <input class="drop-input" type="file" name="file" accept=".pdf" required>
-                <div class="drop-empty">
-                    <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
-                    <p>Arrastre, pegue o seleccione un PDF</p>
-                </div>
-                <div class="drop-ready" hidden>
-                    <div class="drop-file">
-                        <span class="drop-icon drop-icon-pdf" data-file-icon aria-hidden="true">PDF</span>
-                        <div>
-                            <p data-file-name></p>
-                            <p class="muted" data-file-size></p>
-                        </div>
+        <form class="drop-card" method="post" action="{{ route('documents.batch.create', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,application/pdf" data-max="51200">
+            @csrf
+            <p class="drop-card-title">Indexar lote</p>
+            <p class="muted drop-card-hint">Arrastre, pegue o seleccione un PDF. Luego asigne cada página a una carpeta y un tipo.</p>
+            <input class="drop-input" type="file" name="file" accept=".pdf" required>
+            <div class="drop-empty">
+                <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
+                <p>Arrastre, pegue o seleccione un PDF</p>
+            </div>
+            <div class="drop-ready" hidden>
+                <div class="drop-file">
+                    <span class="drop-icon drop-icon-pdf" data-file-icon aria-hidden="true">PDF</span>
+                    <div>
+                        <p data-file-name></p>
+                        <p class="muted" data-file-size></p>
                     </div>
                 </div>
-                <p class="muted drop-error" hidden></p>
-                <div class="drop-actions">
-                    <button class="btn ghost" type="button" data-drop-clear hidden>Quitar</button>
-                    <button class="btn" type="submit" disabled>Indexar</button>
-                    @if($folder === \App\Enums\DocumentFolder::HojaVida)
-                        <button class="btn ghost" type="button" disabled title="Pendiente: decisión de agente de escáner">Escanear</button>
-                    @endif
-                </div>
-            </form>
-        @endforeach
-
-        @foreach(\App\Enums\DocumentFolder::cases() as $folder)
-            @continue($folder->isIndexed())
-            <form class="drop-card" method="post" action="{{ route('documents.store', $person) }}" enctype="multipart/form-data" data-dropzone data-accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" data-max="51200">
-                @csrf
-                <input type="hidden" name="folder" value="{{ $folder->value }}">
-                <p class="drop-card-title">{{ $folder->label() }}</p>
-                <p class="muted drop-card-hint">{{ $folder->hint() }}</p>
-                <input class="drop-input" type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
-                <div class="drop-empty">
-                    <span class="drop-icon drop-icon-pdf" aria-hidden="true">PDF</span>
-                    <p>Arrastre, pegue o seleccione</p>
-                </div>
-                <div class="drop-ready" hidden>
-                    <div class="drop-file">
-                        <span class="drop-icon drop-icon-pdf" data-file-icon aria-hidden="true">PDF</span>
-                        <div>
-                            <p data-file-name></p>
-                            <p class="muted" data-file-size></p>
-                        </div>
-                    </div>
-                </div>
-                <p class="muted drop-error" hidden></p>
-                <div class="drop-actions">
-                    <button class="btn ghost" type="button" data-drop-clear hidden>Quitar</button>
-                    <button class="btn" type="submit" disabled>Subir</button>
-                </div>
-            </form>
-        @endforeach
+            </div>
+            <p class="muted drop-error" hidden></p>
+            <div class="drop-actions">
+                <button class="btn ghost" type="button" data-drop-clear hidden>Quitar</button>
+                <button class="btn" type="submit" disabled>Indexar</button>
+                <button class="btn ghost" type="button" disabled title="Pendiente: decisión de agente de escáner">Escanear</button>
+            </div>
+        </form>
     </div>
 </section>
 @endif

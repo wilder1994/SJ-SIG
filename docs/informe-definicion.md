@@ -147,7 +147,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 **Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
 
-**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`) con tarjetas por carpeta (arrastrar, pegar o seleccionar; se ve icono PDF/IMG y el nombre antes de confirmar).
+**Documentos** es una fila por empleado (no por archivo). Filtro por nombre/cédula. **Ver carpeta** es el expediente indexado. Supervisor y operaciones: consulta + preview. Interno/admin: **Cargar documentos** (`?cargar=1`) con una tarjeta PDF (arrastrar, pegar o seleccionar) y luego carpeta + tipo en el indexador.
 
 | Carpeta | Contenido | Carga |
 |---------|-----------|--------|
@@ -168,8 +168,8 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 
 - Renombrar etiqueta de carpeta `hv` → **Historia Laboral**.
 - Catálogo fijo de tipos de documento (lista operativa SJ).
-- En modo carga: tarjetas por carpeta (arrastrar, pegar o seleccionar). Todas las carpetas: solo PDF → **Indexar**.
-- Pantalla **Indexar lote**: dos columnas. Izquierda: contexto Historia Laboral + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF (scroll si no caben). Seleccionar páginas sueltas (p. ej. 1, 7, 11) o un tramo con Shift+clic → asignar tipo → nombre sugerido (`Tipo_cedula_Apellidos_Nombres`) → **Guardar** genera **un archivo por tipo** (solo esas páginas).
+- En modo carga: **una** tarjeta PDF → **Indexar**. En el lote se elige carpeta y tipo por grupo de páginas (un PDF puede alimentar varias carpetas).
+- Pantalla **Indexar lote**: dos columnas. Izquierda: carpeta + tipo/nombre/lista (scroll si crece). Derecha: miniaturas del PDF. Seleccionar páginas sueltas o un tramo con Shift+clic → carpeta → tipo → **Guardar** genera **un archivo por corte**.
 - En consulta: botón **Listado** (reemplaza el “Ver” a nivel carpeta) → lista de tipos con estado (cargado / falta / N/A) e **icono ojo** para previsualizar cada archivo en el modal actual (`/documentos/archivo/{id}/ver`).
 - Campos de trazabilidad en documento: `document_type`, `display_name`, opcionalidad / “si aplica”.
 
@@ -214,7 +214,8 @@ Objetivo: dejar de tratar la carpeta como “un PDF suelto” y pasar a **gesti�
 - Enum `LaborHistoryDocumentType` (código, etiqueta, obligatorio / opcional / si aplica).
 - Tabla `document_batches` + columnas en `person_documents` (`document_type`, `display_name`, `pages` JSON, `page_from`/`page_to` min/max, `not_applicable`).
 - `StoreLaborHistoryBatchService` + `IndexLaborHistoryPdfService` (partir PDF por lista de páginas con FPDI).
-- UI: `documents/folder` (consulta Listado + ojo; carga en tarjetas dropzone) + `documents/index-batch` (dos columnas, miniaturas PDF.js, selección no consecutiva, scroll por panel).
+- UI: `documents/folder` (consulta Listado + ojo; una dropzone PDF) + `documents/index-batch` (select de carpeta, tipos del catálogo activo, miniaturas PDF.js, páginas sueltas).
+- Rutas de lote: `POST/GET /documentos/carpeta/{person}/lote`, `GET .../lote/{batch}/ver`, `POST .../lote/{batch}`. El PDF vive en `.../lote/batches/{uuid}.pdf`. `document_batches.folder` queda null; la carpeta va en cada corte (`slices.*.folder`).
 - Sin cambiar el aislamiento por cliente/contrato.
 
 ### 6.2 Afiliaciones — gestión documental (hecho)
@@ -232,7 +233,7 @@ Mismo flujo que Historia Laboral. Catálogo de **8 tipos**, todos obligatorios: 
 | 7 | Afiliación seguro de vida | `afiliacion_seguro_vida` |
 | 8 | Afiliación o carta de desistimiento de seguro exequial | `afiliacion_exequial` |
 
-Tarjeta PDF → **Indexar lote** (mismas miniaturas y páginas sueltas). Consulta: **Listado** + ojo. N/A disponible en modo carga. Lotes se distinguen con `document_batches.folder` (`hv` / `contratacion` / `certificados` / `cursos` / `afiliaciones` / `otros`). Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
+Mismo lote único: en el indexador se elige carpeta Afiliaciones y el tipo. Consulta: **Listado** + ojo. N/A disponible en modo carga. Enum `AffiliationDocumentType`. Demo: 3/8 (EPS, pensiones y caja).
 
 ### 6.3 Certificados — gestión documental (hecho)
 
@@ -301,7 +302,7 @@ Orden en UI: Historia Laboral → **Contratación** → Certificados → Cursos 
 
 Mismo indexador (PDF, páginas sueltas). No hay catálogo fijo: el usuario **digita el tipo**. El nombre del archivo se arma con el slug del tipo + cédula + nombre (editable). Tope **20** soportes por trabajador. Consulta: **Listado** `N/20 soportes` + ojo. Sin N/A. Demo: 0/20 (no se siembra).
 
-Si el tipo o el nombre coincide con un documento de Historia Laboral, Contratación, Certificados, Cursos o Afiliaciones, no se guarda: debe cambiar el tipo o cargarlo en esa carpeta. Rutas: `/documentos/carpeta/{person}/otros`. Enum `OtherDocumentType` (`otro_soporte`, repetible). Helper `OtherSupportNamer`.
+Si el tipo o el nombre coincide con un documento de Historia Laboral, Contratación, Certificados, Cursos o Afiliaciones, no se guarda: debe cambiar el tipo o cargarlo en esa carpeta. Se indexa en el lote único (`/lote`) eligiendo carpeta Otros. Enum `OtherDocumentType` (`otro_soporte`, repetible). Helper `OtherSupportNamer`.
 
 ---
 
@@ -311,7 +312,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Carga por tarjetas + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho. Afiliaciones indexadas (8 tipos). PILA en Parafiscales |
@@ -330,7 +331,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar` | — | — |
-| Documentos | `GET /documentos` | `GET/POST /documentos/carpeta/{person}` (+ `/historia`, `/contratacion`, `/certificados`, `/cursos`, `/afiliaciones`, `/otros`) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
+| Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
 Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entidad y operaciones: Ver/Descargar.  
@@ -350,7 +351,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Carpetas indexadas (HV, Contratación, Certificados, Cursos y capacitación, Afiliaciones, Otros): `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; `document_batches.folder`; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -361,7 +362,7 @@ Local aislado:
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches.folder`, cursos `provider`/`taken_on`). Demo: `php artisan migrate:fresh --seed`.
+- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches.folder` nullable para el lote único). Demo: `php artisan migrate:fresh --seed`.
 - Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
 ### Usuarios y claves de prueba (demo local)
@@ -426,3 +427,4 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Contratación indexada: 9 tipos obligatorios (contrato, ética, inducción, carné, carta). Demo 0/9. No se cruza con HV. |
 | 2026-09-09 | Tope de carga 50 MB. LAN de demo: Wi‑Fi `sjsp.net` `http://172.16.23.47:8086/ingreso`. |
 | 2026-09-09 | Otros indexados: tipo libre, máx. 20 por trabajador. Bloquea nombres que cruzan con las otras carpetas. |
+| 2026-09-09 | Un solo PDF para indexar (`/lote`): carpeta + tipo por corte. `document_batches.folder` nullable. Las 6 tarjetas de carga quedan en una. |

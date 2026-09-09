@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 
 final class StoreLaborHistoryBatchService
 {
-    public function execute(Contract $contract, Person $person, UploadedFile $file, DocumentFolder $folder = DocumentFolder::HojaVida): DocumentBatch
+    public function execute(Contract $contract, Person $person, UploadedFile $file, ?DocumentFolder $folder = null): DocumentBatch
     {
         $extension = strtolower($file->getClientOriginalExtension() ?: 'pdf');
         $relative = sprintf(
@@ -21,7 +21,7 @@ final class StoreLaborHistoryBatchService
             $contract->tenant_id,
             $contract->id,
             $person->id,
-            $folder->value,
+            $folder?->value ?? 'lote',
             Str::uuid()->toString(),
             $extension,
         );

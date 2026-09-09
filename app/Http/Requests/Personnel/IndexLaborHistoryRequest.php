@@ -8,6 +8,7 @@ use App\Models\DocumentBatch;
 use App\Support\Personnel\IndexedFolder;
 use App\Support\Personnel\OtherSupportNamer;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 use InvalidArgumentException;
 
@@ -23,6 +24,7 @@ final class IndexLaborHistoryRequest extends FormRequest
     {
         return [
             'slices' => ['required', 'array', 'min:1'],
+            'slices.*.folder' => ['required', Rule::enum(DocumentFolder::class)],
             'slices.*.document_type' => ['required', 'string'],
             'slices.*.display_name' => ['required', 'string', 'max:180'],
             'slices.*.tipo' => ['nullable', 'string', 'max:80'],
@@ -37,21 +39,29 @@ final class IndexLaborHistoryRequest extends FormRequest
     {
         $validator->after(function ($validator): void {
             $batch = DocumentBatch::query()->with('person.documents')->find((int) $this->route('batch'));
-            $folder = $batch?->folder;
             $person = $batch?->person;
             $seenTipos = [];
+            $otrosIncoming = 0;
+
             foreach ($this->input('slices', []) as $index => $slice) {
                 $pages = array_map('intval', $slice['pages'] ?? []);
                 if ($pages !== array_values(array_unique($pages))) {
                     $validator->errors()->add('slices.'.$index.'.pages', 'Hay páginas repetidas en este corte.');
                 }
-                if ($folder !== null && isset($slice['document_type'])) {
+
+                $folder = DocumentFolder::tryFrom((string) ($slice['folder'] ?? ''));
+                if ($folder === null) {
+                    continue;
+                }
+
+                if (isset($slice['document_type'])) {
                     try {
                         IndexedFolder::resolve($folder, (string) $slice['document_type']);
                     } catch (InvalidArgumentException) {
                         $validator->errors()->add('slices.'.$index.'.document_type', 'Tipo no válido para esta carpeta.');
                     }
                 }
+
                 if ($folder === DocumentFolder::Cursos) {
                     if (blank($slice['taken_on'] ?? null)) {
                         $validator->errors()->add('slices.'.$index.'.taken_on', 'La fecha del curso es obligatoria.');
@@ -60,10 +70,12 @@ final class IndexLaborHistoryRequest extends FormRequest
                         $validator->errors()->add('slices.'.$index.'.provider', 'La entidad que dicta el curso es obligatoria.');
                     }
                 }
+
                 if ($folder !== DocumentFolder::Otros || $person === null) {
                     continue;
                 }
 
+                $otrosIncoming++;
                 $tipo = trim((string) ($slice['tipo'] ?? ''));
                 if ($tipo === '') {
                     $validator->errors()->add('slices.'.$index.'.tipo', 'Digite el tipo del soporte.');
@@ -96,11 +108,8 @@ final class IndexLaborHistoryRequest extends FormRequest
                 }
             }
 
-            if ($folder === DocumentFolder::Otros && $person !== null) {
-                $incoming = count($this->input('slices', []));
-                if (OtherSupportNamer::loadedCount($person) + $incoming > OtherDocumentType::MAX) {
-                    $validator->errors()->add('slices', 'Solo se permiten '.OtherDocumentType::MAX.' soportes en Otros por trabajador.');
-                }
+            if ($person !== null && OtherSupportNamer::loadedCount($person) + $otrosIncoming > OtherDocumentType::MAX) {
+                $validator->errors()->add('slices', 'Solo se permiten '.OtherDocumentType::MAX.' soportes en Otros por trabajador.');
             }
         });
     }

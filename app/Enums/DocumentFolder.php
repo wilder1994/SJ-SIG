@@ -26,66 +26,18 @@ enum DocumentFolder: string
     public function hint(): string
     {
         return match ($this) {
-            self::HojaVida => 'Checklist indexado de ingreso y selección. Subir PDF y asignar tipo a cada página.',
+            self::HojaVida => 'Checklist indexado de ingreso y selección.',
             self::Contratacion => 'Checklist indexado de vinculación: contrato, ética, inducción, carné y carta de presentación.',
-            self::Certificados => 'Checklist indexado: examen médico de ingreso, psicofísico y psicosensométrico. Subir PDF y asignar tipo a cada página.',
+            self::Certificados => 'Checklist indexado: examen médico de ingreso, psicofísico y psicosensométrico.',
             self::Cursos => 'Catálogo Superintendencia + otro. Cada acta lleva fecha y entidad que dicta el curso.',
-            self::Afiliaciones => 'Afiliaciones que hace la empresa al contratar. Subir PDF y asignar tipo a cada página.',
-            self::Otros => 'Soportes que no caben arriba. Escriba el tipo; máximo 20 por trabajador. No use un tipo de otra carpeta.',
+            self::Afiliaciones => 'Afiliaciones que hace la empresa al contratar.',
+            self::Otros => 'Soportes que no caben arriba. Tipo libre; máximo 20 por trabajador.',
         };
     }
 
     public function isIndexed(): bool
     {
         return true;
-    }
-
-    public function batchRoute(): ?string
-    {
-        return match ($this) {
-            self::HojaVida => 'documents.history.batch',
-            self::Contratacion => 'documents.contracting.batch',
-            self::Certificados => 'documents.certificates.batch',
-            self::Cursos => 'documents.courses.batch',
-            self::Afiliaciones => 'documents.affiliations.batch',
-            self::Otros => 'documents.others.batch',
-        };
-    }
-
-    public function indexRoute(): ?string
-    {
-        return match ($this) {
-            self::HojaVida => 'documents.history.index',
-            self::Contratacion => 'documents.contracting.index',
-            self::Certificados => 'documents.certificates.index',
-            self::Cursos => 'documents.courses.index',
-            self::Afiliaciones => 'documents.affiliations.index',
-            self::Otros => 'documents.others.index',
-        };
-    }
-
-    public function storeIndexRoute(): ?string
-    {
-        return match ($this) {
-            self::HojaVida => 'documents.history.store',
-            self::Contratacion => 'documents.contracting.store',
-            self::Certificados => 'documents.certificates.store',
-            self::Cursos => 'documents.courses.store',
-            self::Afiliaciones => 'documents.affiliations.store',
-            self::Otros => 'documents.others.store',
-        };
-    }
-
-    public function previewRoute(): ?string
-    {
-        return match ($this) {
-            self::HojaVida => 'documents.history.preview',
-            self::Contratacion => 'documents.contracting.preview',
-            self::Certificados => 'documents.certificates.preview',
-            self::Cursos => 'documents.courses.preview',
-            self::Afiliaciones => 'documents.affiliations.preview',
-            self::Otros => 'documents.others.preview',
-        };
     }
 
     public function naRoute(): ?string

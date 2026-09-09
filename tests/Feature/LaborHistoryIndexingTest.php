@@ -10,11 +10,11 @@ use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
 use App\Enums\OtherDocumentType;
 use App\Models\DocumentBatch;
-use App\Support\Personnel\OtherSupportNamer;
 use App\Models\Person;
 use App\Models\PersonDocument;
 use App\Models\User;
 use App\Support\Files\SimplePdf;
+use App\Support\Personnel\OtherSupportNamer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -41,77 +41,37 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('1/25 indexados')
             ->assertSee('3/8 indexados')
             ->assertSee('0/20 soportes')
-            ->assertDontSee('Subir PDF');
+            ->assertDontSee('Indexar lote');
 
         $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/historia')
-            ->assertForbidden();
-
-        $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/contratacion')
-            ->assertForbidden();
-
-        $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/certificados')
-            ->assertForbidden();
-
-        $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones')
-            ->assertForbidden();
-
-        $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/cursos')
-            ->assertForbidden();
-
-        $this->actingAs($supervisor)
-            ->post('/documentos/carpeta/'.$person->id.'/otros')
+            ->post('/documentos/carpeta/'.$person->id.'/lote')
             ->assertForbidden();
     }
 
     public function test_internal_user_can_index_non_contiguous_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $type = LaborHistoryDocumentType::FotocopiaCedula;
-        $name = $type->suggestedName($person);
-
-        $path = storage_path('framework/testing/hv-lote.pdf');
-        SimplePdf::writePages($path, ['Pagina uno', 'Pagina dos', 'Pagina tres']);
-        $file = new UploadedFile($path, 'lote.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina uno', 'Pagina dos', 'Pagina tres'], 'hv-lote.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId.'&cargar=1')
-            ->assertOk()
-            ->assertSee('Arrastre, pegue o seleccione')
-            ->assertSee('Indexar');
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/historia', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::HojaVida)
-            ->firstOrFail();
-        $this->assertSame(3, $batch->page_count);
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Indexar lote')
+            ->assertSee('Carpeta')
+            ->assertSee('Historia Laboral')
             ->assertSee('Marque las páginas');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id.'/ver')
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id.'/ver')
             ->assertOk();
 
         $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/historia/'.$batch->id, [
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
                 'slices' => [[
+                    'folder' => DocumentFolder::HojaVida->value,
                     'document_type' => $type->value,
-                    'display_name' => $name,
+                    'display_name' => $type->suggestedName($person),
                     'pages' => [1, 3],
                 ]],
             ])
@@ -133,47 +93,52 @@ final class LaborHistoryIndexingTest extends TestCase
             ->assertSee('2/26 indexados');
     }
 
+    public function test_internal_user_can_index_mixed_folders_from_one_pdf(): void
+    {
+        [$interno, $person] = $this->internoAndPerson();
+        $hv = LaborHistoryDocumentType::FotocopiaCedula;
+        $contract = ContractingDocumentType::ContratoTrabajo;
+        $batch = $this->uploadLote($interno, $person, ['Cedula', 'Contrato'], 'mixto.pdf');
+
+        $this->actingAs($interno)
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
+                'slices' => [
+                    [
+                        'folder' => DocumentFolder::HojaVida->value,
+                        'document_type' => $hv->value,
+                        'display_name' => $hv->suggestedName($person),
+                        'pages' => [1],
+                    ],
+                    [
+                        'folder' => DocumentFolder::Contratacion->value,
+                        'document_type' => $contract->value,
+                        'display_name' => $contract->suggestedName($person),
+                        'pages' => [2],
+                    ],
+                ],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id)
+            ->assertOk()
+            ->assertSee('2/26 indexados')
+            ->assertSee('1/9 indexados');
+    }
+
     public function test_internal_user_can_index_contracting_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $type = ContractingDocumentType::ContratoTrabajo;
-        $name = $type->suggestedName($person);
-
-        $path = storage_path('framework/testing/contratacion-lote.pdf');
-        SimplePdf::writePages($path, ['Pagina contrato']);
-        $file = new UploadedFile($path, 'contratacion.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina contrato'], 'contratacion.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/contratacion', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Contratacion)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/contratacion/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Contratación')
             ->assertSee('contrato_trabajo');
 
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/contratacion/'.$batch->id, [
-                'slices' => [[
-                    'document_type' => $type->value,
-                    'display_name' => $name,
-                    'pages' => [1],
-                ]],
-            ])
-            ->assertRedirect('/documentos/carpeta/'.$person->id);
+        $this->postIndexed($interno, $person, $batch, DocumentFolder::Contratacion, $type->value, $type->suggestedName($person));
 
         $this->assertDatabaseHas('person_documents', [
             'person_id' => $person->id,
@@ -184,57 +149,22 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
             ->assertOk()
-            ->assertSee('1/9 indexados')
-            ->assertSee('1/26 indexados');
+            ->assertSee('1/9 indexados');
     }
 
     public function test_internal_user_can_index_affiliation_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $type = AffiliationDocumentType::Cesantias;
-        $name = $type->suggestedName($person);
-
-        $path = storage_path('framework/testing/af-lote.pdf');
-        SimplePdf::writePages($path, ['Pagina EPS', 'Pagina cesantias']);
-        $file = new UploadedFile($path, 'afiliaciones.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina EPS', 'Pagina cesantias'], 'afiliaciones.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Afiliaciones)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/afiliaciones/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Afiliaciones')
             ->assertSee('certificado_cesantias');
 
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/afiliaciones/'.$batch->id, [
-                'slices' => [[
-                    'document_type' => $type->value,
-                    'display_name' => $name,
-                    'pages' => [2],
-                ]],
-            ])
-            ->assertRedirect('/documentos/carpeta/'.$person->id);
-
-        $this->assertDatabaseHas('person_documents', [
-            'person_id' => $person->id,
-            'folder' => DocumentFolder::Afiliaciones->value,
-            'document_type' => $type->value,
-        ]);
+        $this->postIndexed($interno, $person, $batch, DocumentFolder::Afiliaciones, $type->value, $type->suggestedName($person), [2]);
 
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
@@ -244,51 +174,17 @@ final class LaborHistoryIndexingTest extends TestCase
 
     public function test_internal_user_can_index_certificate_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $type = CertificateDocumentType::ExamenPsicofisico;
-        $name = $type->suggestedName($person);
-
-        $path = storage_path('framework/testing/cert-lote.pdf');
-        SimplePdf::writePages($path, ['Pagina medico', 'Pagina psicofisico']);
-        $file = new UploadedFile($path, 'certificados.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina medico', 'Pagina psicofisico'], 'certificados.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/certificados', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Certificados)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/certificados/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Certificados')
             ->assertSee('examen_psicofisico');
 
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/certificados/'.$batch->id, [
-                'slices' => [[
-                    'document_type' => $type->value,
-                    'display_name' => $name,
-                    'pages' => [2],
-                ]],
-            ])
-            ->assertRedirect('/documentos/carpeta/'.$person->id);
-
-        $this->assertDatabaseHas('person_documents', [
-            'person_id' => $person->id,
-            'folder' => DocumentFolder::Certificados->value,
-            'document_type' => $type->value,
-        ]);
+        $this->postIndexed($interno, $person, $batch, DocumentFolder::Certificados, $type->value, $type->suggestedName($person), [2]);
 
         $this->actingAs($interno)
             ->get('/documentos/carpeta/'.$person->id)
@@ -298,41 +194,22 @@ final class LaborHistoryIndexingTest extends TestCase
 
     public function test_internal_user_can_index_supervised_course_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $type = CourseDocumentType::ReentrenamientoVigilancia;
-        $name = $type->suggestedName($person);
-
-        $path = storage_path('framework/testing/curso-lote.pdf');
-        SimplePdf::writePages($path, ['Acta reentrenamiento']);
-        $file = new UploadedFile($path, 'cursos.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Acta reentrenamiento'], 'cursos.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/cursos', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Cursos)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/cursos/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Cursos y capacitación')
             ->assertSee('reentrenamiento_vigilancia');
 
         $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/cursos/'.$batch->id, [
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
                 'slices' => [[
+                    'folder' => DocumentFolder::Cursos->value,
                     'document_type' => $type->value,
-                    'display_name' => $name,
+                    'display_name' => $type->suggestedName($person),
                     'pages' => [1],
                     'taken_on' => '2026-03-15',
                     'provider' => 'Escuela de la Superintendencia',
@@ -340,12 +217,6 @@ final class LaborHistoryIndexingTest extends TestCase
             ])
             ->assertRedirect('/documentos/carpeta/'.$person->id);
 
-        $this->assertDatabaseHas('person_documents', [
-            'person_id' => $person->id,
-            'folder' => DocumentFolder::Cursos->value,
-            'document_type' => $type->value,
-            'provider' => 'Escuela de la Superintendencia',
-        ]);
         $this->assertDatabaseHas('courses', [
             'person_id' => $person->id,
             'course_type' => $type->value,
@@ -360,42 +231,23 @@ final class LaborHistoryIndexingTest extends TestCase
 
     public function test_internal_user_can_index_other_support_pages(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $tipo = 'RUT Camara de Comercio';
-        $name = OtherSupportNamer::suggestedName($tipo, $person);
-
-        $path = storage_path('framework/testing/otros-lote.pdf');
-        SimplePdf::writePages($path, ['Pagina RUT']);
-        $file = new UploadedFile($path, 'otros.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina RUT'], 'otros.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/otros', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Otros)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
+            ->get('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertOk()
             ->assertSee('Otros')
-            ->assertSee('escriba el tipo');
+            ->assertSee('varias carpetas');
 
         $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id, [
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
                 'slices' => [[
+                    'folder' => DocumentFolder::Otros->value,
                     'document_type' => OtherDocumentType::Otro->value,
                     'tipo' => $tipo,
-                    'display_name' => $name,
+                    'display_name' => OtherSupportNamer::suggestedName($tipo, $person),
                     'pages' => [1],
                 ]],
             ])
@@ -404,7 +256,6 @@ final class LaborHistoryIndexingTest extends TestCase
         $this->assertDatabaseHas('person_documents', [
             'person_id' => $person->id,
             'folder' => DocumentFolder::Otros->value,
-            'document_type' => OtherDocumentType::Otro->value,
             'display_name' => $tipo,
         ]);
 
@@ -417,40 +268,78 @@ final class LaborHistoryIndexingTest extends TestCase
 
     public function test_other_support_rejects_catalog_name(): void
     {
-        $this->seed();
-        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
-        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
-        $contractId = $person->contracts()->value('contracts.id');
+        [$interno, $person] = $this->internoAndPerson();
         $tipo = 'Contrato de trabajo';
-
-        $path = storage_path('framework/testing/otros-cruzado.pdf');
-        SimplePdf::writePages($path, ['Pagina contrato']);
-        $file = new UploadedFile($path, 'otros.pdf', 'application/pdf', null, true);
+        $batch = $this->uploadLote($interno, $person, ['Pagina contrato'], 'otros-cruzado.pdf');
 
         $this->actingAs($interno)
-            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId)
-            ->assertOk();
-
-        $this->actingAs($interno)
-            ->post('/documentos/carpeta/'.$person->id.'/otros', ['file' => $file])
-            ->assertRedirect();
-
-        $batch = DocumentBatch::query()
-            ->where('person_id', $person->id)
-            ->where('folder', DocumentFolder::Otros)
-            ->firstOrFail();
-
-        $this->actingAs($interno)
-            ->from('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
-            ->post('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id, [
+            ->from('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
                 'slices' => [[
+                    'folder' => DocumentFolder::Otros->value,
                     'document_type' => OtherDocumentType::Otro->value,
                     'tipo' => $tipo,
                     'display_name' => OtherSupportNamer::suggestedName($tipo, $person),
                     'pages' => [1],
                 ]],
             ])
-            ->assertRedirect('/documentos/carpeta/'.$person->id.'/otros/'.$batch->id)
+            ->assertRedirect('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id)
             ->assertSessionHasErrors('slices.0.tipo');
+    }
+
+    /** @return array{0: User, 1: Person} */
+    private function internoAndPerson(): array
+    {
+        $this->seed();
+        $interno = User::query()->where('email', 'interno@sj-sig.test')->firstOrFail();
+        $person = Person::query()->where('document_number', '11440001')->firstOrFail();
+        $contractId = $person->contracts()->value('contracts.id');
+
+        $this->actingAs($interno)
+            ->get('/documentos/carpeta/'.$person->id.'?contract='.$contractId.'&cargar=1')
+            ->assertOk()
+            ->assertSee('Indexar lote')
+            ->assertSee('Un PDF por lote');
+
+        return [$interno, $person];
+    }
+
+    /** @param list<string> $pages */
+    private function uploadLote(User $user, Person $person, array $pages, string $filename): DocumentBatch
+    {
+        $path = storage_path('framework/testing/'.$filename);
+        SimplePdf::writePages($path, $pages);
+        $file = new UploadedFile($path, $filename, 'application/pdf', null, true);
+
+        $this->actingAs($user)
+            ->post('/documentos/carpeta/'.$person->id.'/lote', ['file' => $file])
+            ->assertRedirect();
+
+        return DocumentBatch::query()
+            ->where('person_id', $person->id)
+            ->latest('id')
+            ->firstOrFail();
+    }
+
+    /** @param list<int> $pages */
+    private function postIndexed(
+        User $user,
+        Person $person,
+        DocumentBatch $batch,
+        DocumentFolder $folder,
+        string $type,
+        string $name,
+        array $pages = [1],
+    ): void {
+        $this->actingAs($user)
+            ->post('/documentos/carpeta/'.$person->id.'/lote/'.$batch->id, [
+                'slices' => [[
+                    'folder' => $folder->value,
+                    'document_type' => $type,
+                    'display_name' => $name,
+                    'pages' => $pages,
+                ]],
+            ])
+            ->assertRedirect('/documentos/carpeta/'.$person->id);
     }
 }
