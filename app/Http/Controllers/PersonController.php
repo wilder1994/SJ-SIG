@@ -6,6 +6,7 @@ use App\Http\Requests\Personnel\ConfirmPersonnelImportRequest;
 use App\Http\Requests\Personnel\ImportPersonnelRequest;
 use App\Http\Requests\Personnel\StorePersonPhotoRequest;
 use App\Http\Requests\Personnel\StorePersonRequest;
+use App\Http\Requests\Personnel\UpdatePersonRequest;
 use App\Models\Contract;
 use App\Models\Person;
 use App\Repositories\Contracts\PersonRepositoryInterface;
@@ -35,11 +36,13 @@ final class PersonController extends Controller
     {
         $contract = $request->attributes->get('currentContract');
         $search = $request->string('q')->toString() ?: null;
+        $perPage = $this->perPage($request);
 
         return view('people.index', [
             'people' => $contract instanceof Contract
-                ? $this->people->paginateForContract($contract->id, $search)
-                : new LengthAwarePaginator([], 0, 24),
+                ? $this->people->paginateForContract($contract->id, $search, false, $perPage)
+                : new LengthAwarePaginator([], 0, $perPage),
+            'perPage' => $perPage,
         ]);
     }
 
@@ -57,6 +60,21 @@ final class PersonController extends Controller
         $person = $this->creator->execute($contract, $request->personPayload(), $request->file('photo'));
 
         return redirect()->route('people.show', $person)->with('status', 'Empleado registrado. Los PDF se cargan en Documentos → carpeta.');
+    }
+
+    public function edit(Request $request, int $person): View
+    {
+        abort_unless(auth()->user()?->role->canUploadEvidence() ?? false, 403);
+
+        return view('people.edit', ['person' => $this->personInContract($request, $person)]);
+    }
+
+    public function update(UpdatePersonRequest $request, int $person): RedirectResponse
+    {
+        $model = $this->personInContract($request, $person);
+        $this->creator->update($model, $request->personPayload(), $request->file('photo'));
+
+        return redirect()->route('people.show', $model)->with('status', 'Ficha actualizada.');
     }
 
     public function photo(Request $request, int $person): StreamedResponse
@@ -182,6 +200,13 @@ final class PersonController extends Controller
         }
 
         return [$token, $draft];
+    }
+
+    private function perPage(Request $request): int
+    {
+        $perPage = (int) $request->input('per_page', 25);
+
+        return in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
     }
 
     private function personInContract(Request $request, int $person): Person

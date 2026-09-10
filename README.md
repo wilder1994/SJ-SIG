@@ -59,14 +59,14 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
-| **Personal** | Quién es: buscador, Excel (revisar → importar), alta unitaria, ficha y foto circular | Interno / admin |
+| **Personal** | Tabla a todo el ancho (paginación 10/25/50/100). Excel en modal. Ficha y crear/editar con los campos de la plantilla. Foto circular | Interno / admin crean y editan; entidad consulta |
 | **Documentos** | Listado por vigilante (cédula, carpetas con PDF, documentos reales). En la carpeta: foto, tarjetas y modal. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) | Interno/admin: foto + modal PDF + indexar; entidad consulta tarjetas/modal |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Ficha del universo (identidad, contacto, representante) + georreferencia Google | Solo administración |
 | **Instalaciones** | Tabla de sedes (Ver/Editar/Crear). Código automático. Puestos con modalidad y unidades por cargo. Si cambia ficha, puesto o cupos, pide el motivo de esa parte y lo deja en bitácora | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
-Flujo actual: Clientes (ficha + pin) → Usuarios / Instalaciones (dirección + pin; código de sede solo) → Tablero (mapa satélite, navy = cliente, cian = sedes) → Personal → Nuevo empleado o plantilla (Revisar → Importar) → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.
+Flujo actual: Clientes (ficha + pin) → Usuarios / Instalaciones (dirección + pin; código de sede solo) → Tablero (mapa satélite, navy = cliente, cian = sedes) → Personal (tabla o **Carga masiva**) → ficha / Editar → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.
 
 El menú izquierdo no se estira con la página: queda al alto de la ventana, scrollea si no caben los módulos y se pliega con la flecha del centro.
 

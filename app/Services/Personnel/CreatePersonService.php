@@ -37,4 +37,17 @@ final class CreatePersonService
 
         return $person;
     }
+
+    /** @param  array<string, mixed>  $payload */
+    public function update(Person $person, array $payload, ?UploadedFile $photo = null): Person
+    {
+        unset($payload['post_id'], $payload['tenant_id']);
+        $person->fill($payload)->save();
+
+        if ($photo !== null) {
+            $this->photos->execute($person, $photo);
+        }
+
+        return $person->fresh() ?? $person;
+    }
 }

@@ -118,7 +118,7 @@ Reglas de aislamiento:
 - Entidad, operaciones y técnico: un cliente; 404 al cruzar IDs.
 - Perfil de plataforma: solo lectura. Alta/edición de usuarios: solo Administración.
 - Storage: `tenants/{tenant_id}/contracts/{contract_id}/...` y `avatars/` (no se versionan).
-- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest` + `SiteStructureTest`.
+- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest` + `SiteStructureTest` + `PeopleDirectoryTest`.
 
 ---
 
@@ -166,7 +166,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 
 ### Personal vs Documentos (IA de producto)
 
-**Personal** es quién es el vigilante: buscador, tabla, alta unitaria, carga masiva. **Ver ficha** muestra identidad, EPS/pensión/caja/ARL en texto y el conteo de archivos, con enlace a la carpeta. No hay visor ni subidas ni cursos en esa pantalla.
+**Personal** es quién es el vigilante. El listado es una tabla a todo el ancho (estado, cargo, ingreso, teléfono, EPS) con scroll interno, conteo y paginación 10/25/50/100. **Carga masiva** es un botón que abre el dropzone Excel en modal. **Ver ficha** muestra todos los campos de la plantilla, en bloques (identidad, contacto, vinculación, seguridad social), con Editar y enlace a la carpeta. Crear y editar usan el mismo formulario que el Excel. No hay visor ni subidas ni cursos en esa pantalla. El supervisor consulta; no edita.
 
 **Documentos** es una fila por empleado (no por archivo). Columnas: cédula, nombre, **carpetas** (con al menos un PDF / 6), **documentos** (PDFs reales, sin N/A) y acciones (icono carpeta → expediente). En la carpeta: foto circular del vigilante, tarjetas de carpeta con conteo `N de total` y modal (buscador, Ver/Descargar; Eliminar solo 12 h). Interno/admin: **Cargar documentos** (modal PDF) y cámara para la foto. **No aplica** en pendientes del modal.
 
@@ -333,7 +333,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
 | 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Tabla + Ver/Editar/Crear. Puestos con modalidad y unidades por cargo. Bitácora: el sistema detecta si el cambio es en instalación, puesto o personal y pide el motivo. Código de sede automático. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Import: dropzone + revisar + confirmar. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Tabla a todo el ancho + ficha/editar con los campos del Excel. Import: botón → modal dropzone + revisar + confirmar. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho. Afiliaciones indexadas (8 tipos). PILA en Parafiscales |
@@ -351,7 +351,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `GET /instalaciones/nueva`, `POST /instalaciones`, `GET .../{id}`, `GET .../{id}/editar`, `PUT .../{id}` (puestos + cargos; motivo si cambia instalación/puesto/personal), `POST .../{id}/puestos` | ficha + bitácora | — |
-| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar/revisar`, `GET /personal/importar/revision`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
+| Personal | `GET /personal` (`q`, `per_page`) | `GET /personal/nuevo`, `POST /personal`, `GET/PUT .../{id}/editar` (mismos campos del Excel), `POST /personal/importar/revisar`, `GET /personal/importar/revision`, `POST /personal/importar`; foto `GET/POST .../foto` | ficha + foto `/personal/{id}/foto` | — |
 | Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta; `DELETE .../archivo/{id}` (12 h) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
@@ -371,7 +371,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Dotación: `post_staffings` (`GuardRole`) + bitácora `site_service_events` (el servicio clasifica el cambio en instalación / puesto / personal). Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Dotación: `post_staffings` (`GuardRole`) + bitácora `site_service_events` (el servicio clasifica el cambio en instalación / puesto / personal). Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: botón en el listado → modal dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta y edición: `CreatePersonService` + `people._form` (todos los campos de la plantilla). Listado: `PeopleDirectoryTest`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
 
 UI: layout compacto gerencial (rail fijo al viewport, scroll interno del menú, flecha para plegar; `localStorage sj-rail`). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -454,3 +454,4 @@ El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Cli
 | 2026-09-09 | Tablero: mapa satélite + toggle Calle, KPIs a la derecha, anillo de salud afiliatoria. Rail fijo con scroll y plegado. |
 | 2026-09-09 | Instalaciones: tabla + Ver/Editar/Crear. Puestos con cargo (vigilante, escolta, supervisor, operador). Bitácora de inicio y de cambio. |
 | 2026-09-09 | Motivo de edición: el sistema detecta si cambió instalación, puesto o personal y pide el motivo nombrando esa parte. Fecha del asiento = ahora. |
+| 2026-09-09 | Personal: tabla a todo el ancho (scroll, conteo, 10/25/50/100). Carga masiva en modal. Ficha y formulario (crear/editar) con todos los campos del Excel. |

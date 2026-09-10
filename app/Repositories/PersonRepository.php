@@ -9,7 +9,7 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 final class PersonRepository implements PersonRepositoryInterface
 {
-    public function paginateForContract(int $contractId, ?string $search = null, bool $documentStats = false): LengthAwarePaginator
+    public function paginateForContract(int $contractId, ?string $search = null, bool $documentStats = false, int $perPage = 24): LengthAwarePaginator
     {
         $query = Person::query()
             ->whereHas('contracts', fn ($q) => $q->where('contracts.id', $contractId))
@@ -35,7 +35,7 @@ final class PersonRepository implements PersonRepositoryInterface
             $query->withCount('documents');
         }
 
-        return $query->paginate(24)->withQueryString();
+        return $query->paginate(max(1, $perPage))->withQueryString();
     }
 
     public function findInContract(int $contractId, int $personId): ?Person

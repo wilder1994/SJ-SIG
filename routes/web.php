@@ -61,6 +61,8 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::get('/personal/importar/revision', [PersonController::class, 'review'])->name('people.import.review');
     Route::post('/personal/importar', [PersonController::class, 'import'])->name('people.import');
     Route::get('/personal/{person}', [PersonController::class, 'show'])->name('people.show');
+    Route::get('/personal/{person}/editar', [PersonController::class, 'edit'])->name('people.edit');
+    Route::put('/personal/{person}', [PersonController::class, 'update'])->name('people.update');
     Route::get('/personal/{person}/foto', [PersonController::class, 'photo'])->name('people.photo');
     Route::post('/personal/{person}/foto', [PersonController::class, 'storePhoto'])->name('people.photo.store');
     Route::get('/documentos', [DocumentController::class, 'index'])->name('documents.index');
