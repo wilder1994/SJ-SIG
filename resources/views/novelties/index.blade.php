@@ -3,20 +3,31 @@
 @section('title', 'Novedades · SJ-SIG')
 
 @section('content')
+@if($novelties->isEmpty())
+    <x-empty-panel kicker="Sin novedades" title="No hay novedades">
+        <p class="muted">En este contrato todavía no hay casos de ejecución abiertos ni cerrados.</p>
+        @if(auth()->user()->role->canMutateNovelties())
+            <form method="post" action="{{ route('novelties.store') }}" class="field" style="gap:10px;margin-top:16px;text-align:left">
+                @csrf
+                <input name="title" placeholder="Título" required>
+                <textarea name="body" rows="5" placeholder="Descripción" required></textarea>
+                <button class="btn" type="submit">Abrir novedad</button>
+            </form>
+        @endif
+    </x-empty-panel>
+@else
 <div class="split">
     <article class="card">
         <table class="data">
             <thead><tr><th>Estado</th><th>Caso</th><th>Puesto</th></tr></thead>
             <tbody>
-            @forelse($novelties as $item)
+            @foreach($novelties as $item)
                 <tr>
                     <td>{{ $item->status->label() }}</td>
                     <td>{{ $item->title }}<div class="muted">{{ $item->created_at->format('d/m/Y H:i') }}</div></td>
                     <td>{{ $item->post?->name ?? '—' }}</td>
                 </tr>
-            @empty
-                <tr><td colspan="3" class="muted">Sin novedades.</td></tr>
-            @endforelse
+            @endforeach
             </tbody>
         </table>
         <div style="margin-top:12px">{{ $novelties->links() }}</div>
@@ -33,4 +44,5 @@
     </article>
     @endif
 </div>
+@endif
 @endsection

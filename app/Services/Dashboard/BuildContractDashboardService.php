@@ -97,6 +97,31 @@ final class BuildContractDashboardService
             ])
             ->all();
 
+        $contract->loadMissing(['tenant', 'sites']);
+        $mapPoints = [];
+        $tenant = $contract->tenant;
+        if ($tenant?->hasCoordinates()) {
+            $mapPoints[] = [
+                'kind' => 'client',
+                'label' => $tenant->name,
+                'address' => $tenant->address,
+                'lat' => (float) $tenant->lat,
+                'lng' => (float) $tenant->lng,
+            ];
+        }
+        foreach ($contract->sites as $site) {
+            if (! $site->hasCoordinates()) {
+                continue;
+            }
+            $mapPoints[] = [
+                'kind' => 'site',
+                'label' => $site->name,
+                'address' => $site->address,
+                'lat' => (float) $site->lat,
+                'lng' => (float) $site->lng,
+            ];
+        }
+
         return new DashboardSnapshot(
             contractName: $contract->name,
             tenantName: $contract->tenant->name,
@@ -108,6 +133,7 @@ final class BuildContractDashboardService
             maintenanceWatch: $maintenanceWatch,
             openNovelties: $openNovelties,
             parafiscalMonthsOnFile: CompanyParafiscal::query()->where('contract_id', $contract->id)->count(),
+            mapPoints: $mapPoints,
         );
     }
 }

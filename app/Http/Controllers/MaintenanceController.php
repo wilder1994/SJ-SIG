@@ -14,14 +14,15 @@ final class MaintenanceController extends Controller
 {
     public function index(Request $request): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
 
-        $assets = ElectronicAsset::query()
-            ->where('contract_id', $contract->id)
-            ->with(['post', 'maintenances' => fn ($q) => $q->latest('performed_on')])
-            ->orderBy('name')
-            ->get();
+        $assets = $contract instanceof Contract
+            ? ElectronicAsset::query()
+                ->where('contract_id', $contract->id)
+                ->with(['post', 'maintenances' => fn ($q) => $q->latest('performed_on')])
+                ->orderBy('name')
+                ->get()
+            : collect();
 
         return view('electronics.index', compact('assets'));
     }

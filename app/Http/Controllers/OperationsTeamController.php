@@ -16,10 +16,11 @@ final class OperationsTeamController extends Controller
     {
         abort_unless(auth()->user()?->role->canAccessOpsTeam() ?? false, 403);
         $contract = $request->attributes->get('currentContract');
-        abort_if($contract === null, 404);
 
         return view('operations.index', [
-            'members' => $this->users->operationsForTenant((int) $contract->tenant_id),
+            'members' => $contract !== null
+                ? $this->users->operationsForTenant((int) $contract->tenant_id)
+                : collect(),
         ]);
     }
 }

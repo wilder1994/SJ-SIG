@@ -3,6 +3,19 @@
 @section('title', 'Personal · SJ-SIG')
 
 @section('content')
+@php
+    $hasPeople = $people->isNotEmpty();
+    $searching = filled(request('q'));
+@endphp
+
+@if(! $hasPeople && ! $searching)
+    <x-empty-panel kicker="Sin personal" title="No hay personal registrado">
+        <p class="muted">En este contrato todavía no hay vigilantes. Crea uno o importa la plantilla SJ-SIG.</p>
+        @if(auth()->user()->role->canUploadEvidence())
+            <a class="btn" href="{{ route('people.create') }}" style="margin-top:14px">Nuevo empleado</a>
+        @endif
+    </x-empty-panel>
+@else
 <div class="split">
     <article class="card">
         <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px">
@@ -25,7 +38,7 @@
                     <td><a href="{{ route('people.show', $person) }}">Ficha</a></td>
                 </tr>
             @empty
-                <tr><td colspan="4" class="muted">Sin personal en este contrato.</td></tr>
+                <tr><td colspan="4" class="muted">No hay coincidencias para esa búsqueda.</td></tr>
             @endforelse
             </tbody>
         </table>
@@ -50,4 +63,5 @@
     </article>
     @endif
 </div>
+@endif
 @endsection

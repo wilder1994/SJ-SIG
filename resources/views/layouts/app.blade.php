@@ -28,7 +28,7 @@
                 <a href="{{ route('services.index') }}" class="{{ request()->routeIs('services.*') ? 'is-on' : '' }}">Servicios</a>
                 <a href="{{ route('novelties.index') }}" class="{{ request()->routeIs('novelties.*') ? 'is-on' : '' }}">Novedades</a>
             @endif
-            @if(auth()->user()->role->canAccessOpsTeam() && $currentContract)
+            @if(auth()->user()->role->canAccessOpsTeam())
                 <a href="{{ route('operations.index') }}" class="{{ request()->routeIs('operations.*') ? 'is-on' : '' }}">Equipo SJ</a>
             @endif
             <a href="{{ route('profile.show') }}" class="{{ request()->routeIs('profile.*') ? 'is-on' : '' }}">Mi perfil</a>

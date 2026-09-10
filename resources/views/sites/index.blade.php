@@ -3,6 +3,20 @@
 @section('title', 'Instalaciones · SJ-SIG')
 
 @section('content')
+@if($sites->isEmpty())
+    <x-empty-panel kicker="Sin instalaciones" title="No hay instalaciones">
+        <p class="muted">En este cliente todavía no hay plantas, bodegas ni puestos. Crea la primera instalación con su dirección.</p>
+    </x-empty-panel>
+    @if($currentContract && auth()->user()->role->canManageStructure())
+        <article class="card" style="max-width:820px;margin:16px auto 0">
+            <p class="kicker">Nueva sede</p>
+            <form method="post" action="{{ route('sites.store') }}" class="form-grid">
+                @csrf
+                @include('sites._form')
+            </form>
+        </article>
+    @endif
+@else
 <article class="card" style="margin-bottom:12px">
     <p class="kicker">Estructura del cliente</p>
     <h2 class="display" style="font-size:24px;margin:4px 0 8px">Instalaciones y puestos</h2>
@@ -10,26 +24,18 @@
     @if(auth()->user()->role->canManageStructure())
         <form method="post" action="{{ route('sites.store') }}" class="form-grid" style="margin-top:14px">
             @csrf
-            <label class="field">Código
-                <input name="code" required maxlength="16" placeholder="P1">
-            </label>
-            <label class="field">Instalación
-                <input name="name" required placeholder="Planta 1, Bodega 2…">
-            </label>
-            <label class="field">Ciudad
-                <input name="city">
-            </label>
-            <div class="field" style="justify-content:flex-end">
-                <button class="btn" type="submit">Crear instalación</button>
-            </div>
+            @include('sites._form')
         </form>
     @endif
 </article>
 
-@forelse($sites as $site)
+@foreach($sites as $site)
 <article class="card" style="margin-bottom:12px">
-    <p class="kicker">{{ $site->code }}{{ $site->city ? ' · '.$site->city : '' }}</p>
+    <p class="kicker">{{ $site->code }}{{ $site->city ? ' · '.$site->city : '' }}{{ $site->department ? ' · '.$site->department : '' }}</p>
     <h3 class="display" style="font-size:22px;margin:4px 0 10px">{{ $site->name }}</h3>
+    @if($site->address)
+        <p class="muted">{{ $site->address }}</p>
+    @endif
     <table class="data">
         <thead><tr><th>Puesto</th><th>Modalidad</th><th>Unidades</th></tr></thead>
         <tbody>
@@ -67,7 +73,6 @@
         </form>
     @endif
 </article>
-@empty
-<p class="muted">Sin instalaciones en este cliente.</p>
-@endforelse
+@endforeach
+@endif
 @endsection

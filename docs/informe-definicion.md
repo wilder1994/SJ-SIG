@@ -311,25 +311,25 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
-| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Capacidad: modalidad + unidades por puesto. Asignación persona↔puesto pendiente |
+| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Ficha de cliente + georreferencia (Places/Maps). Instalación con la misma dirección. Capacidad: modalidad + unidades. Asignación persona↔puesto pendiente |
 | 3 | Personal + import Excel + gestor documental | Hecho. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho. Afiliaciones indexadas (8 tipos). PILA en Parafiscales |
 | 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
-| 8 | Servicios por puesto | Consulta seed |
+| 8 | Servicios por puesto | Consulta por puesto y periodo |
 | 9 | Novedades de ejecución | Alta + listado |
-| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero KPI; exportación PDF/Excel pendiente |
-| 11 | Usuarios demo A vs B + interno/ops | Hecho |
+| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero KPI + mapa (pin navy cliente, cian instalaciones). Exportación PDF/Excel pendiente |
+| 11 | Aislamiento A vs B + roles | Cubierto en PHPUnit (`TestingSeeder`). Producción: solo admin; el resto se crea en Clientes/Usuarios |
 
 ### Rutas de evidencia (v1)
 
 | Recurso | Listado | Carpeta / alta | Visor | Descarga |
 |---------|---------|----------------|-------|----------|
-| Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` | — | — |
+| Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` (ficha + lat/lng/`place_id`) | — | — |
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
-| Instalaciones | `GET /instalaciones` | `POST /instalaciones`, `POST .../{site}/puestos` | — | — |
+| Instalaciones | `GET /instalaciones` | `POST /instalaciones` (dirección + mapa), `POST .../{site}/puestos` | — | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
 | Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta; `DELETE .../archivo/{id}` (12 h) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
@@ -339,6 +339,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 ### Tablero (visión)
 
 - Semáforo documental (Historia Laboral, Contratación, Certificados, Cursos y capacitación, Afiliaciones y Otros indexadas, parafiscal del mes).  
+- Mapa del contrato: pin navy = sede del cliente; pin cian = instalaciones con coordenadas.  
 - Servicios por puesto (semana / mes / acumulado).  
 - Mantenimientos: últimos, vencidos, sin evidencia.  
 - Novedades abiertas vs. cerradas.  
@@ -351,7 +352,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` (sin 404).
 
 UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -362,22 +363,15 @@ Local aislado:
 - Firewall Windows: script `docs/apache/abrir-firewall-8086.ps1` (Administrador) — regla *SJ-SIG LAN 8086*.
 - Vhost: `docs/apache/00-aae-sj-sig.conf` → `sites-enabled` + Reload Apache. URLs generadas según el Host (`ForceRequestRootUrl`).
 - Base de datos propia: `sj_sig`
-- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate` (p. ej. `document_batches.folder` nullable para el lote único). Demo: `php artisan migrate:fresh --seed`.
+- Tras pull: `composer install`, `npm install && npm run build`, `php artisan migrate:fresh --seed` (esquema unificado + admin). Si la base ya está en este esquema: `php artisan migrate` y, si falta el admin, `php artisan db:seed`.
+- Mapas: `GOOGLE_MAPS_API_KEY` en `.env` (Maps JavaScript, Places, Geocoding). Restringir a los hosts LAN. No versionar la clave.
 - Si `php` no está en PATH: `C:\laragon\bin\php\php-8.3.30-Win32-vs16-x64\php.exe artisan …`
 
-### Usuarios y claves de prueba (demo local)
+### Acceso inicial (producción / local)
 
-Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
+`php artisan migrate:fresh --seed` deja **solo el administrador**. Correo y clave: `ADMIN_EMAIL` y `ADMIN_PASSWORD` en `.env` (nombre opcional `ADMIN_NAME`). Por defecto: `admin@sj-sig.test` / `Sig2026!`.
 
-| Correo | Rol | Cliente | Para qué |
-|--------|-----|---------|----------|
-| `admin@sj-sig.test` | Administración | Todos | Usuarios y clientes |
-| `interno@sj-sig.test` | Usuario interno | Todos | Carga Excel/PDF, instalaciones |
-| `ops.a@sj-sig.test` | Operaciones | Alcaldía A | Sale en Equipo SJ (A) |
-| `ops.b@sj-sig.test` | Operaciones | Entidad B | Sale en Equipo SJ (B) |
-| `tecnico@sj-sig.test` | Técnico | Alcaldía A | Solo electrónica |
-| `supervisor.a@sj-sig.test` | Supervisor de cliente | Alcaldía A | Universo A |
-| `supervisor.b@sj-sig.test` | Supervisor de cliente | Entidad B | Universo B |
+El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Clientes** y **Usuarios**. PHPUnit usa `TestingSeeder` (universos A/B, Ana/Bruno, interno/ops/técnico/supervisores) para aislamiento y flujos; no corre en producción.
 
 ---
 
@@ -433,3 +427,6 @@ Clave común: **`Sig2026!`** (variable `SEED_PASSWORD`).
 | 2026-09-09 | Un solo PDF para indexar (`/lote`): carpeta + tipo por corte. `document_batches.folder` nullable. Las 6 tarjetas de carga quedan en una. |
 | 2026-09-09 | Cargar documentos en modal centrado. N/A visible para interno/admin sin `?cargar=1`. |
 | 2026-09-09 | Listado Documentos: cédula, nombre, carpetas con PDF, documentos reales y acción Ver carpeta. |
+| 2026-09-09 | Esquema unificado en `2026_09_08_100000_create_sj_sig_domain`. Seed de producción: solo admin. Demo A/B queda en `TestingSeeder` para PHPUnit. |
+| 2026-09-09 | Vacío centrado en módulos sin cliente o sin datos (no 404). |
+| 2026-09-09 | Ficha de cliente e instalación georreferenciada (Places/Maps). Tablero: mapa con pin navy (cliente) y cian (instalaciones). |

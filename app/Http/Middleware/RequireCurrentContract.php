@@ -14,13 +14,31 @@ final class RequireCurrentContract
             return $next($request);
         }
 
-        abort_unless($request->routeIs(
+        if ($request->routeIs(
             'dashboard',
             'clients.*',
             'users.*',
             'profile.*',
-        ), 404);
+            'people.index',
+            'sites.index',
+            'documents.index',
+            'parafiscals.index',
+            'electronics.index',
+            'services.index',
+            'novelties.index',
+            'operations.index',
+        )) {
+            return $next($request);
+        }
 
-        return $next($request);
+        $user = $request->user();
+        $target = $user?->role->canManageClients()
+            ? route('clients.index')
+            : route('dashboard');
+
+        return redirect($target)->with(
+            'status',
+            'Este módulo necesita un cliente. Crea el primero en Clientes o pide a Administración que lo dé de alta.',
+        );
     }
 }

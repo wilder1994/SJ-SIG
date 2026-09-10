@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'SJ-SIG')</title>
+    <script>window.SJ_MAPS_KEY = @json((string) config('services.google.maps_key'));</script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>

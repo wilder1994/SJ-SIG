@@ -24,11 +24,12 @@ final class SiteController extends Controller
     {
         abort_unless(auth()->user()?->role->canAccessHr() ?? false, 403);
 
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
 
         return view('sites.index', [
-            'sites' => $contract->sites()->with('posts')->get(),
+            'sites' => $contract instanceof Contract
+                ? $contract->sites()->with('posts')->get()
+                : collect(),
             'modalities' => ServiceModality::cases(),
         ]);
     }

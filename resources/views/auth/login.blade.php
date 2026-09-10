@@ -36,7 +36,6 @@
                 <p style="color:var(--bad);margin-bottom:10px">{{ $message }}</p>
             @enderror
             <button class="btn" type="submit" style="width:100%">Ingresar</button>
-            <p class="muted" style="margin-top:14px;font-size:12px">Demo: supervisor.a@sj-sig.test · Sig2026!</p>
         </form>
     </section>
 </div>

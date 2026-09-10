@@ -3,6 +3,23 @@
 @section('title', 'Parafiscales · SJ-SIG')
 
 @section('content')
+@if($items->isEmpty())
+    <x-empty-panel kicker="Sin parafiscales" title="No hay parafiscales">
+        <p class="muted">En este contrato todavía no hay planilla PILA ni otro soporte de empresa.</p>
+        @if(auth()->user()->role->canUploadEvidence())
+            <form method="post" action="{{ route('parafiscals.store') }}" enctype="multipart/form-data" class="field" style="gap:10px;margin-top:16px;text-align:left">
+                @csrf
+                <label class="field">Periodo
+                    <input type="month" name="period" value="{{ now()->format('Y-m') }}" required>
+                </label>
+                <label class="field">PDF
+                    <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required>
+                </label>
+                <button class="btn" type="submit">Subir expediente</button>
+            </form>
+        @endif
+    </x-empty-panel>
+@else
 <div class="split">
     <article class="card">
         <p class="kicker">Empresa · por periodo</p>
@@ -11,7 +28,7 @@
         <table class="data">
             <thead><tr><th>Periodo</th><th>Documento</th><th></th></tr></thead>
             <tbody>
-            @forelse($items as $item)
+            @foreach($items as $item)
                 <tr>
                     <td>{{ $item->period }}</td>
                     <td>{{ $item->original_name }}</td>
@@ -20,9 +37,7 @@
                         <a href="{{ route('parafiscals.download', $item) }}">Descargar</a>
                     </td>
                 </tr>
-            @empty
-                <tr><td colspan="3" class="muted">Sin parafiscales de empresa en este contrato.</td></tr>
-            @endforelse
+            @endforeach
             </tbody>
         </table>
     </article>
@@ -42,4 +57,5 @@
     </article>
     @endif
 </div>
+@endif
 @endsection

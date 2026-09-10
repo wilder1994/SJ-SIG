@@ -21,6 +21,27 @@
     </article>
 </section>
 
+<section class="card" style="margin:12px 0">
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;margin-bottom:10px">
+        <div>
+            <p class="kicker">Ubicaciones</p>
+            <h2 class="display" style="font-size:22px;margin:4px 0 0">Cliente e instalaciones</h2>
+        </div>
+        <p class="muted" style="margin:0">
+            <span class="map-legend"><span class="map-dot client"></span> Cliente</span>
+            <span class="map-legend"><span class="map-dot site"></span> Instalaciones</span>
+        </p>
+    </div>
+    @if(count($snapshot->mapPoints) === 0)
+        <p class="muted">Todavía no hay coordenadas. Georreferencia el cliente o las instalaciones para verlas en el mapa.</p>
+    @endif
+    <div
+        class="overview-map"
+        data-overview-map
+        data-points='@json($snapshot->mapPoints)'
+    ></div>
+</section>
+
 <section class="split">
     <article class="card">
         <p class="kicker">Servicios del mes · por puesto</p>

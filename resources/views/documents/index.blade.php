@@ -3,6 +3,19 @@
 @section('title', 'Documentos · SJ-SIG')
 
 @section('content')
+@php
+    $hasPeople = $people->isNotEmpty();
+    $searching = filled($q);
+@endphp
+
+@if(! $hasPeople && ! $searching)
+    <x-empty-panel kicker="Sin documentos" title="No hay carpetas de personal">
+        <p class="muted">Las carpetas aparecen cuando hay vigilantes en este contrato. Primero registra personal.</p>
+        @if(auth()->user()->role->canAccessHr())
+            <a class="btn" href="{{ route('people.index') }}" style="margin-top:14px">Ir a Personal</a>
+        @endif
+    </x-empty-panel>
+@else
 <article class="card">
     <p class="kicker">Repositorio del contrato</p>
     <h2 class="display" style="font-size:24px;margin:4px 0 10px">Carpetas del personal</h2>
@@ -38,10 +51,11 @@
                 </td>
             </tr>
         @empty
-            <tr><td colspan="5" class="muted">Sin personal en este contrato.</td></tr>
+            <tr><td colspan="5" class="muted">No hay coincidencias para esa búsqueda.</td></tr>
         @endforelse
         </tbody>
     </table>
     <div style="margin-top:12px">{{ $people->links() }}</div>
 </article>
+@endif
 @endsection

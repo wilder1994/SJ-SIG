@@ -9,6 +9,7 @@ final readonly class DashboardSnapshot
      * @param  list<array{name: string, days: int}>  $expiringDocuments
      * @param  list<array{asset: string, due: string, evidence: bool}>  $maintenanceWatch
      * @param  list<array{title: string, post: ?string, opened: string}>  $openNovelties
+     * @param  list<array{kind: string, label: string, address: ?string, lat: float, lng: float}>  $mapPoints
      */
     public function __construct(
         public string $contractName,
@@ -21,5 +22,6 @@ final readonly class DashboardSnapshot
         public array $maintenanceWatch,
         public array $openNovelties,
         public int $parafiscalMonthsOnFile,
+        public array $mapPoints = [],
     ) {}
 }

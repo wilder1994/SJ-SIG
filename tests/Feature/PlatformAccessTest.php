@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\UserRole;
+use App\Models\Contract;
+use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -9,6 +12,77 @@ use Tests\TestCase;
 final class PlatformAccessTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_admin_without_clients_sees_personnel_empty_state(): void
+    {
+        $admin = User::factory()->create([
+            'role' => UserRole::AdminEmpresa,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/personal')
+            ->assertOk()
+            ->assertSee('No hay personal registrado')
+            ->assertSee('Crea el primero en Clientes')
+            ->assertSee('Nuevo cliente');
+    }
+
+    public function test_internal_user_without_clients_sees_personnel_empty_state(): void
+    {
+        $interno = User::factory()->create([
+            'role' => UserRole::Interno,
+        ]);
+
+        $this->actingAs($interno)
+            ->get('/personal')
+            ->assertOk()
+            ->assertSee('No hay personal registrado')
+            ->assertSee('Crea el primero en Clientes')
+            ->assertDontSee('Nuevo cliente')
+            ->assertDontSee('Nuevo empleado');
+    }
+
+    public function test_admin_with_client_and_no_people_sees_create_employee_prompt(): void
+    {
+        $tenant = Tenant::query()->create([
+            'name' => 'Cliente vacío',
+            'slug' => 'cliente-vacio',
+        ]);
+        Contract::query()->create([
+            'tenant_id' => $tenant->id,
+            'code' => 'VAC-1',
+            'name' => 'Contrato vacío',
+        ]);
+        $admin = User::factory()->create([
+            'role' => UserRole::AdminEmpresa,
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/personal')
+            ->assertOk()
+            ->assertSee('No hay personal registrado')
+            ->assertSee('todavía no hay vigilantes')
+            ->assertSee('Nuevo empleado')
+            ->assertDontSee('Nuevo cliente');
+    }
+
+    public function test_admin_without_clients_sees_empty_states_on_modules(): void
+    {
+        $admin = User::factory()->create([
+            'role' => UserRole::AdminEmpresa,
+        ]);
+
+        $this->actingAs($admin);
+
+        $this->get('/clientes')->assertOk()->assertSee('No hay clientes')->assertSee('Nuevo cliente');
+        $this->get('/instalaciones')->assertOk()->assertSee('No hay instalaciones')->assertSee('Nuevo cliente');
+        $this->get('/documentos')->assertOk()->assertSee('No hay carpetas de personal')->assertSee('Nuevo cliente');
+        $this->get('/parafiscales')->assertOk()->assertSee('No hay parafiscales')->assertSee('Nuevo cliente');
+        $this->get('/electronica')->assertOk()->assertSee('No hay activos electrónicos')->assertSee('Nuevo cliente');
+        $this->get('/servicios')->assertOk()->assertSee('No hay servicios registrados')->assertSee('Nuevo cliente');
+        $this->get('/novedades')->assertOk()->assertSee('No hay novedades')->assertSee('Nuevo cliente');
+        $this->get('/equipo')->assertOk()->assertSee('No hay equipo de operaciones')->assertSee('Nuevo cliente');
+    }
 
     public function test_entity_supervisor_cannot_open_users_or_clients(): void
     {

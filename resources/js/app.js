@@ -1,3 +1,7 @@
+import { bootMaps } from './maps.js';
+
+bootMaps();
+
 const layer = document.getElementById('preview-layer');
 const frame = document.getElementById('preview-iframe');
 const title = document.getElementById('preview-title');

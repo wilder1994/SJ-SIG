@@ -24,6 +24,7 @@ use App\Support\Personnel\IndexedFolder;
 use App\Support\Personnel\OtherSupportNamer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -40,12 +41,13 @@ final class DocumentController extends Controller
 
     public function index(Request $request): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
         $q = $request->string('q')->toString();
 
         return view('documents.index', [
-            'people' => $this->people->paginateForContract($contract->id, $q !== '' ? $q : null, true),
+            'people' => $contract instanceof Contract
+                ? $this->people->paginateForContract($contract->id, $q !== '' ? $q : null, true)
+                : new LengthAwarePaginator([], 0, 24),
             'folderTotal' => count(DocumentFolder::cases()),
             'q' => $q,
         ]);

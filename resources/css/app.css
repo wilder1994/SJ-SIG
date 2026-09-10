@@ -120,6 +120,18 @@ html, body {
 
 .muted { color: var(--ink-soft); }
 
+.empty-panel {
+    min-height: calc(100vh - 180px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-panel .card {
+    max-width: 36rem;
+    text-align: center;
+}
+
 .split {
     display: grid;
     grid-template-columns: 1.15fr .85fr;
@@ -204,6 +216,55 @@ input[type="search"]:focus,
 }
 
 .form-grid .span-2 { grid-column: 1 / -1; }
+
+.location-address {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.location-address input { flex: 1; }
+
+.location-pin-btn {
+    padding: 8px 10px;
+    min-width: 40px;
+}
+
+.location-picker,
+.overview-map {
+    width: 100%;
+    min-height: 280px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #e8eef6;
+}
+
+.overview-map { min-height: 380px; }
+
+.location-picker.is-missing-key,
+.overview-map.is-missing-key {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.map-legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 12px;
+}
+
+.map-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.map-dot.client { background: #0b3d91; }
+.map-dot.site { background: #58c4ff; }
 
 .upload-deck { margin-bottom: 4px; }
 

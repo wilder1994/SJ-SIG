@@ -38,7 +38,7 @@ final class ClientController extends Controller
 
     public function store(StoreClientRequest $request): RedirectResponse
     {
-        $this->creator->execute($request->validated());
+        $this->creator->execute($request->clientPayload());
 
         return redirect()->route('clients.index')->with('status', 'Cliente creado. Ya puede asignar usuarios y armar su estructura.');
     }
@@ -52,7 +52,7 @@ final class ClientController extends Controller
 
     public function update(UpdateClientRequest $request, Tenant $client): RedirectResponse
     {
-        $this->updater->execute($client, $request->validated());
+        $this->updater->execute($client, $request->clientPayload());
 
         return redirect()->route('clients.index')->with('status', 'Cliente actualizado.');
     }

@@ -2,12 +2,14 @@
 
 namespace App\Http\Requests\Structure;
 
-use App\Enums\ServiceModality;
+use App\Http\Requests\Concerns\ValidatesLocation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 final class StoreSiteRequest extends FormRequest
 {
+    use ValidatesLocation;
+
     public function authorize(): bool
     {
         return $this->user()?->role->canManageStructure() ?? false;
@@ -21,7 +23,7 @@ final class StoreSiteRequest extends FormRequest
         return [
             'code' => ['required', 'string', 'max:16', Rule::unique('sites', 'code')->where('contract_id', $contractId)],
             'name' => ['required', 'string', 'max:160'],
-            'city' => ['nullable', 'string', 'max:80'],
+            ...$this->locationRules(),
         ];
     }
 }

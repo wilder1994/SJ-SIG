@@ -8,21 +8,23 @@ use App\Models\Contract;
 use App\Models\Novelty;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 final class NoveltyController extends Controller
 {
     public function index(Request $request): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
 
         return view('novelties.index', [
-            'novelties' => Novelty::query()
-                ->where('contract_id', $contract->id)
-                ->with('post')
-                ->latest()
-                ->paginate(20),
+            'novelties' => $contract instanceof Contract
+                ? Novelty::query()
+                    ->where('contract_id', $contract->id)
+                    ->with('post')
+                    ->latest()
+                    ->paginate(20)
+                : new LengthAwarePaginator([], 0, 20),
         ]);
     }
 

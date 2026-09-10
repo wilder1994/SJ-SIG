@@ -8,7 +8,39 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Tenant extends Model
 {
-    protected $fillable = ['name', 'slug', 'nit'];
+    protected $fillable = [
+        'name',
+        'slug',
+        'nit',
+        'person_kind',
+        'structure_type',
+        'trade_name',
+        'legal_name',
+        'document_type',
+        'contact_email',
+        'phone',
+        'legal_rep_name',
+        'legal_rep_email',
+        'address',
+        'city',
+        'department',
+        'lat',
+        'lng',
+        'place_id',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'lat' => 'float',
+            'lng' => 'float',
+        ];
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->lat !== null && $this->lng !== null;
+    }
 
     public function contracts(): HasMany
     {

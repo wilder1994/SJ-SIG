@@ -3,6 +3,11 @@
 @section('title', 'Electrónica · SJ-SIG')
 
 @section('content')
+@if($assets->isEmpty())
+    <x-empty-panel kicker="Sin electrónica" title="No hay activos electrónicos">
+        <p class="muted">En este contrato todavía no hay cámaras, DVR ni otros equipos registrados.</p>
+    </x-empty-panel>
+@else
 <div class="split">
     <article class="card">
         <p class="kicker">Infraestructura</p>
@@ -35,4 +40,5 @@
     </article>
     @endif
 </div>
+@endif
 @endsection

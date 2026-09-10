@@ -11,16 +11,17 @@ final class ServiceDeliveryController extends Controller
 {
     public function index(Request $request): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
 
-        $rows = ServiceDelivery::query()
-            ->where('contract_id', $contract->id)
-            ->with('post.site')
-            ->orderByDesc('period_starts_on')
-            ->orderBy('post_id')
-            ->get()
-            ->groupBy(fn (ServiceDelivery $row) => $row->period_kind.'|'.$row->period_starts_on?->toDateString());
+        $rows = $contract instanceof Contract
+            ? ServiceDelivery::query()
+                ->where('contract_id', $contract->id)
+                ->with('post.site')
+                ->orderByDesc('period_starts_on')
+                ->orderBy('post_id')
+                ->get()
+                ->groupBy(fn (ServiceDelivery $row) => $row->period_kind.'|'.$row->period_starts_on?->toDateString())
+            : collect();
 
         return view('services.index', compact('rows'));
     }

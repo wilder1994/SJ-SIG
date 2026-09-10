@@ -3,6 +3,17 @@
 @section('title', 'Clientes · SJ-SIG')
 
 @section('content')
+@php
+    $hasClients = $clients->isNotEmpty();
+    $searching = filled(request('q'));
+@endphp
+
+@if(! $hasClients && ! $searching)
+    <x-empty-panel kicker="Sin clientes" title="No hay clientes" :require-client="false">
+        <p class="muted">Aún no hay universos. Crea el primero y luego asigna usuarios, instalaciones y personal.</p>
+        <a class="btn" href="{{ route('clients.create') }}" style="margin-top:14px">Nuevo cliente</a>
+    </x-empty-panel>
+@else
 <article class="card">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px">
         <form method="get" style="display:flex;gap:8px;flex:1">
@@ -22,10 +33,11 @@
                 <td><a href="{{ route('clients.edit', $client) }}">Editar</a></td>
             </tr>
         @empty
-            <tr><td colspan="4" class="muted">Sin clientes. Cree el primero para abrir un universo.</td></tr>
+            <tr><td colspan="4" class="muted">No hay coincidencias para esa búsqueda.</td></tr>
         @endforelse
         </tbody>
     </table>
     <div style="margin-top:12px">{{ $clients->links() }}</div>
 </article>
+@endif
 @endsection

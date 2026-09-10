@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
+            $table->string('nit', 32)->nullable();
             $table->timestamps();
         });
 
@@ -27,7 +28,7 @@ return new class extends Migration
             $table->unique(['tenant_id', 'code']);
         });
 
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('sites', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('contract_id')->constrained()->cascadeOnDelete();
@@ -39,10 +40,33 @@ return new class extends Migration
             $table->unique(['contract_id', 'code']);
         });
 
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('contract_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('site_id')->nullable()->constrained()->nullOnDelete();
+            $table->string('code');
+            $table->string('name');
+            $table->string('city')->nullable();
+            $table->unsignedTinyInteger('shift_hours')->default(12);
+            $table->unsignedInteger('guard_slots')->default(1);
+            $table->timestamps();
+
+            $table->unique(['contract_id', 'code']);
+        });
+
         Schema::table('users', function (Blueprint $table) {
             $table->string('role', 32)->after('password');
             $table->foreignId('tenant_id')->nullable()->after('role')->constrained()->nullOnDelete();
             $table->foreignId('contract_id')->nullable()->after('tenant_id')->constrained()->nullOnDelete();
+            $table->string('document_type', 8)->default('C')->after('name');
+            $table->string('document_number', 32)->nullable()->after('document_type');
+            $table->string('job_title')->nullable()->after('document_number');
+            $table->string('phone', 32)->nullable()->after('job_title');
+            $table->string('photo_path')->nullable()->after('phone');
+            $table->boolean('is_active')->default(true)->after('contract_id');
+            $table->boolean('must_change_password')->default(false)->after('is_active');
+            $table->unique('document_number');
         });
 
         Schema::create('people', function (Blueprint $table) {
@@ -51,6 +75,7 @@ return new class extends Migration
             $table->string('document_type', 8)->default('C');
             $table->string('document_number');
             $table->string('full_name');
+            $table->string('photo_path')->nullable();
             $table->date('birth_date')->nullable();
             $table->string('document_issue_place')->nullable();
             $table->date('document_issued_on')->nullable();
@@ -93,28 +118,51 @@ return new class extends Migration
             $table->unique(['contract_id', 'person_id']);
         });
 
-        Schema::create('courses', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
-            $table->string('title');
-            $table->date('taken_on');
-            $table->timestamps();
-        });
-
         Schema::create('person_documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
             $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
             $table->string('folder', 32);
+            $table->string('document_type', 64)->nullable();
+            $table->string('display_name')->nullable();
+            $table->unsignedSmallInteger('page_from')->nullable();
+            $table->unsignedSmallInteger('page_to')->nullable();
+            $table->json('pages')->nullable();
+            $table->boolean('not_applicable')->default(false);
             $table->string('original_name');
             $table->string('disk_path');
             $table->string('mime', 120)->nullable();
             $table->unsignedBigInteger('size_bytes')->default(0);
             $table->date('expires_on')->nullable();
+            $table->date('taken_on')->nullable();
+            $table->string('provider', 180)->nullable();
             $table->timestamps();
 
             $table->index(['tenant_id', 'original_name']);
+        });
+
+        Schema::create('document_batches', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->string('folder', 32)->nullable();
+            $table->string('original_name');
+            $table->string('disk_path');
+            $table->string('mime', 120)->nullable();
+            $table->unsignedInteger('page_count')->default(1);
+            $table->timestamps();
+        });
+
+        Schema::create('courses', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->string('title');
+            $table->string('provider', 180)->nullable();
+            $table->string('course_type', 64)->nullable();
+            $table->foreignId('person_document_id')->nullable()->constrained('person_documents')->nullOnDelete();
+            $table->date('taken_on');
+            $table->timestamps();
         });
 
         Schema::create('company_parafiscals', function (Blueprint $table) {
@@ -183,16 +231,28 @@ return new class extends Migration
         Schema::dropIfExists('maintenances');
         Schema::dropIfExists('electronic_assets');
         Schema::dropIfExists('company_parafiscals');
-        Schema::dropIfExists('person_documents');
         Schema::dropIfExists('courses');
+        Schema::dropIfExists('document_batches');
+        Schema::dropIfExists('person_documents');
         Schema::dropIfExists('contract_person');
         Schema::dropIfExists('people');
         Schema::table('users', function (Blueprint $table) {
+            $table->dropUnique(['document_number']);
             $table->dropConstrainedForeignId('contract_id');
             $table->dropConstrainedForeignId('tenant_id');
-            $table->dropColumn('role');
+            $table->dropColumn([
+                'role',
+                'document_type',
+                'document_number',
+                'job_title',
+                'phone',
+                'photo_path',
+                'is_active',
+                'must_change_password',
+            ]);
         });
         Schema::dropIfExists('posts');
+        Schema::dropIfExists('sites');
         Schema::dropIfExists('contracts');
         Schema::dropIfExists('tenants');
     }

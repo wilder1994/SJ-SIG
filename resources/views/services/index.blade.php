@@ -3,10 +3,15 @@
 @section('title', 'Servicios · SJ-SIG')
 
 @section('content')
+@if($rows->isEmpty())
+    <x-empty-panel kicker="Sin servicios" title="No hay servicios registrados">
+        <p class="muted">En este contrato todavía no hay conteos de servicio por puesto (semana, mes o vigencia).</p>
+    </x-empty-panel>
+@else
 <article class="card">
     <p class="kicker">Ítem 6</p>
     <h2 class="display" style="font-size:24px;margin:4px 0 12px">Cantidad prestada por puesto</h2>
-    @forelse($rows as $key => $group)
+    @foreach($rows as $key => $group)
         @php [$kind, $start] = explode('|', $key); @endphp
         <p style="margin:14px 0 6px;font-weight:500">{{ $kind }} · {{ $start }}</p>
         <table class="data">
@@ -22,8 +27,7 @@
             @endforeach
             </tbody>
         </table>
-    @empty
-        <p class="muted">Sin servicios registrados.</p>
-    @endforelse
+    @endforeach
 </article>
+@endif
 @endsection

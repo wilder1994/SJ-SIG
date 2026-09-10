@@ -14,6 +14,7 @@ use App\Services\Personnel\StorePersonPhotoService;
 use App\Support\Files\StoredFileResponder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -28,11 +29,13 @@ final class PersonController extends Controller
 
     public function index(Request $request): View
     {
-        /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
+        $search = $request->string('q')->toString() ?: null;
 
         return view('people.index', [
-            'people' => $this->people->paginateForContract($contract->id, $request->string('q')->toString() ?: null),
+            'people' => $contract instanceof Contract
+                ? $this->people->paginateForContract($contract->id, $search)
+                : new LengthAwarePaginator([], 0, 24),
         ]);
     }
 

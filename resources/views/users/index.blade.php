@@ -3,6 +3,17 @@
 @section('title', 'Usuarios · SJ-SIG')
 
 @section('content')
+@php
+    $hasUsers = $users->isNotEmpty();
+    $searching = filled(request('q'));
+@endphp
+
+@if(! $hasUsers && ! $searching)
+    <x-empty-panel kicker="Sin usuarios" title="No hay usuarios" :require-client="false">
+        <p class="muted">Todavía no hay cuentas de plataforma. Crea la primera para que el equipo o el cliente puedan entrar.</p>
+        <a class="btn" href="{{ route('users.create') }}" style="margin-top:14px">Nuevo usuario</a>
+    </x-empty-panel>
+@else
 <article class="card">
     <div style="display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:12px">
         <form method="get" style="display:flex;gap:8px;flex:1">
@@ -33,10 +44,11 @@
                 <td><a href="{{ route('users.edit', $item) }}">Editar</a></td>
             </tr>
         @empty
-            <tr><td colspan="6" class="muted">Sin usuarios.</td></tr>
+            <tr><td colspan="6" class="muted">No hay coincidencias para esa búsqueda.</td></tr>
         @endforelse
         </tbody>
     </table>
     <div style="margin-top:12px">{{ $users->links() }}</div>
 </article>
+@endif
 @endsection
