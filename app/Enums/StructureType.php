@@ -22,4 +22,16 @@ enum StructureType: string
             self::Otro => 'Otro',
         };
     }
+
+    public function shortLabel(): string
+    {
+        return match ($this) {
+            self::Alcaldia => 'Alcaldía',
+            self::Empresa => 'Empresa',
+            self::Conjunto => 'Conjunto',
+            self::Hospital => 'Hospital',
+            self::Educacion => 'Educación',
+            self::Otro => 'Otro',
+        };
+    }
 }

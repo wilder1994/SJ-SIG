@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StructureType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -55,5 +56,26 @@ class Tenant extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
+    }
+
+    public function displayName(): string
+    {
+        return (string) ($this->trade_name ?: $this->name);
+    }
+
+    public function legalLabel(): ?string
+    {
+        $legal = trim((string) ($this->legal_name ?: $this->name));
+        $display = trim($this->displayName());
+        if ($legal === '' || strcasecmp($legal, $display) === 0) {
+            return null;
+        }
+
+        return $legal;
+    }
+
+    public function structureShortLabel(): string
+    {
+        return StructureType::tryFrom((string) $this->structure_type)?->shortLabel() ?? '—';
     }
 }

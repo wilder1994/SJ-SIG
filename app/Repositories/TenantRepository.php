@@ -9,20 +9,23 @@ use Illuminate\Support\Collection;
 
 final class TenantRepository implements TenantRepositoryInterface
 {
-    public function paginate(?string $search = null): LengthAwarePaginator
+    public function paginate(?string $search = null, int $perPage = 24): LengthAwarePaginator
     {
         return Tenant::query()
             ->withCount('users')
-            ->with('primaryContract')
+            ->with(['primaryContract' => fn ($query) => $query->withCount(['sites', 'people'])])
             ->when($search, function ($query) use ($search): void {
                 $query->where(function ($inner) use ($search): void {
                     $inner->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('trade_name', 'like', '%'.$search.'%')
+                        ->orWhere('legal_name', 'like', '%'.$search.'%')
                         ->orWhere('nit', 'like', '%'.$search.'%')
+                        ->orWhere('city', 'like', '%'.$search.'%')
                         ->orWhere('slug', 'like', '%'.$search.'%');
                 });
             })
             ->orderBy('name')
-            ->paginate(24)
+            ->paginate(max(1, $perPage))
             ->withQueryString();
     }
 

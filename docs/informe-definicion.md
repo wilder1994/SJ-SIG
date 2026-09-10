@@ -118,7 +118,7 @@ Reglas de aislamiento:
 - Entidad, operaciones y técnico: un cliente; 404 al cruzar IDs.
 - Perfil de plataforma: solo lectura. Alta/edición de usuarios: solo Administración.
 - Storage: `tenants/{tenant_id}/contracts/{contract_id}/...` y `avatars/` (no se versionan).
-- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest` + `SiteStructureTest` + `PeopleDirectoryTest`.
+- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest` + `SiteStructureTest` + `PeopleDirectoryTest` + `ClientDirectoryTest`.
 
 ---
 
@@ -332,7 +332,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
-| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Tabla + Ver/Editar/Crear. Puestos con modalidad y unidades por cargo. Bitácora: el sistema detecta si el cambio es en instalación, puesto o personal y pide el motivo. Código de sede automático. Asignación persona↔puesto pendiente |
+| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Clientes: tabla ancha (ciudad, estructura, sedes, personal, usuarios) + Entrar al tablero + Editar (Volver). Puestos con modalidad y unidades por cargo. Bitácora: el sistema detecta si el cambio es en instalación, puesto o personal y pide el motivo. Código de sede automático. Asignación persona↔puesto pendiente |
 | 3 | Personal + import Excel + gestor documental | Hecho. Tabla a todo el ancho + ficha/editar con los campos del Excel. Import: botón → modal dropzone + revisar + confirmar. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
@@ -347,7 +347,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 
 | Recurso | Listado | Carpeta / alta | Visor | Descarga |
 |---------|---------|----------------|-------|----------|
-| Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` (ficha + lat/lng/`place_id`) | — | — |
+| Clientes | `GET /clientes` (`q`, `per_page`) | `GET /clientes/nuevo`, `POST /clientes`, `GET/PUT .../{id}/editar` (ficha + mapa). **Entrar** = `GET /tablero?contract=` | — | — |
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
 | Instalaciones | `GET /instalaciones` | `GET /instalaciones/nueva`, `POST /instalaciones`, `GET .../{id}`, `GET .../{id}/editar`, `PUT .../{id}` (puestos + cargos; motivo si cambia instalación/puesto/personal), `POST .../{id}/puestos` | ficha + bitácora | — |
@@ -455,3 +455,4 @@ El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Cli
 | 2026-09-09 | Instalaciones: tabla + Ver/Editar/Crear. Puestos con cargo (vigilante, escolta, supervisor, operador). Bitácora de inicio y de cambio. |
 | 2026-09-09 | Motivo de edición: el sistema detecta si cambió instalación, puesto o personal y pide el motivo nombrando esa parte. Fecha del asiento = ahora. |
 | 2026-09-09 | Personal: tabla a todo el ancho (scroll, conteo, 10/25/50/100). Carga masiva en modal. Ficha y formulario (crear/editar) con todos los campos del Excel. |
+| 2026-09-09 | Clientes: tabla operativa (ciudad, estructura, instalaciones, personal, usuarios, teléfono). Entrar al contrato. Editar con Volver. |

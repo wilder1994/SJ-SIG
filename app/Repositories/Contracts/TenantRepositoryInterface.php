@@ -8,7 +8,7 @@ use Illuminate\Support\Collection;
 
 interface TenantRepositoryInterface
 {
-    public function paginate(?string $search = null): LengthAwarePaginator;
+    public function paginate(?string $search = null, int $perPage = 24): LengthAwarePaginator;
 
     /** @return Collection<int, Tenant> */
     public function allOrdered(): Collection;

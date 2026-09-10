@@ -13,7 +13,10 @@
         @if($errors->any())
             <p class="span-2" style="color:var(--bad)">{{ $errors->first() }}</p>
         @endif
-        <div class="span-2"><button class="btn" type="submit">Guardar</button></div>
+        <div class="span-2" style="display:flex;gap:8px">
+            <button class="btn" type="submit">Guardar</button>
+            <a class="btn ghost" href="{{ route('clients.index') }}">Volver</a>
+        </div>
     </form>
 </article>
 @endsection

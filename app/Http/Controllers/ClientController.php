@@ -24,8 +24,11 @@ final class ClientController extends Controller
     {
         abort_unless(auth()->user()?->role->canManageClients() ?? false, 403);
 
+        $perPage = $this->perPage($request);
+
         return view('clients.index', [
-            'clients' => $this->tenants->paginate($request->string('q')->toString() ?: null),
+            'clients' => $this->tenants->paginate($request->string('q')->toString() ?: null, $perPage),
+            'perPage' => $perPage,
         ]);
     }
 
@@ -59,5 +62,12 @@ final class ClientController extends Controller
         $this->updater->execute($client, $request->clientPayload());
 
         return redirect()->route('clients.index')->with('status', 'Cliente actualizado.');
+    }
+
+    private function perPage(Request $request): int
+    {
+        $perPage = (int) $request->input('per_page', 25);
+
+        return in_array($perPage, [10, 25, 50, 100], true) ? $perPage : 25;
     }
 }
