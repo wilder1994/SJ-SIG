@@ -116,8 +116,9 @@ La alta de personal v1 es **importación Excel** ejecutada por `interno` / `admi
 | Fila 2 | Texto de ayuda para quien llena. **No se importa.** |
 | Fila 3 en adelante | Un trabajador por fila. |
 
+**Flujo:** dropzone (arrastrar, pegar o seleccionar Excel) → **Revisar** (previa: altas, actualizaciones con diff de campos, sin cambios, errores) → **Importar** solo filas válidas. El archivo no escribe hasta confirmar. Borrador 20 min (`PersonnelImportDraftStore`).  
 **Upsert:** misma `cedula` en el mismo tenant = actualizar ficha, no duplicar.  
-**Validación:** filas válidas se cargan; las inválidas van a un log (fila, columna, motivo). Fila sin `cedula` = error.  
+**Validación:** filas válidas se confirman; las inválidas quedan en la previa (fila, motivo). Fila sin `cedula` o nombre = error. Cédula repetida en el archivo = error.  
 **Idempotencia y aislamiento:** el archivo no puede crear personas en otro tenant.
 
 ### Columnas de la plantilla (A–AC)
@@ -158,7 +159,7 @@ Esta plantilla **no incluye** salario, banco, cuenta, forma de pago, centros de 
 | Afiliaciones | Afiliaciones que **hace la empresa** al contratar (8 tipos) | Modal PDF → Indexar lote. Nombres EPS/AFP/caja/ARL siguen en la ficha |
 | **Otros** | Soportes sueltos (ver §6.6; tipo libre, máx. 20) | Modal PDF → Indexar lote |
 
-Alta unitaria: Personal → `Nuevo empleado`. Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
+Alta unitaria: Personal → `Nuevo empleado`. Carga masiva visible también con el contrato vacío (no solo cuando ya hay gente). Parafiscales: PDF de **empresa** por periodo (PILA), no de la persona.
 
 ### 6.1 Historia Laboral — gestión documental (hecho; escáner pendiente)
 
@@ -311,15 +312,15 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
-| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Ficha de cliente + georreferencia (Places/Maps). Instalación con la misma dirección. Capacidad: modalidad + unidades. Asignación persona↔puesto pendiente |
-| 3 | Personal + import Excel + gestor documental | Hecho. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
+| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Ficha de cliente + georreferencia. Instalación con la misma dirección. Código de sede automático (iniciales/sigla del cliente + número, p. ej. SOS01). Capacidad: modalidad + unidades. Asignación persona↔puesto pendiente |
+| 3 | Personal + import Excel + gestor documental | Hecho. Import: dropzone + revisar + confirmar. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
 | 6 | EPS / caja / pensión (ficha) + parafiscales empresa | Hecho. Afiliaciones indexadas (8 tipos). PILA en Parafiscales |
 | 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
 | 8 | Servicios por puesto | Consulta por puesto y periodo |
 | 9 | Novedades de ejecución | Alta + listado |
-| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero KPI + mapa (pin navy cliente, cian instalaciones). Exportación PDF/Excel pendiente |
+| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero: mapa satélite (toggle Calle) + KPIs + anillo de salud afiliatoria. Pins navy/cian. Exportación PDF/Excel pendiente |
 | 11 | Aislamiento A vs B + roles | Cubierto en PHPUnit (`TestingSeeder`). Producción: solo admin; el resto se crea en Clientes/Usuarios |
 
 ### Rutas de evidencia (v1)
@@ -329,8 +330,8 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` (ficha + lat/lng/`place_id`) | — | — |
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
-| Instalaciones | `GET /instalaciones` | `POST /instalaciones` (dirección + mapa), `POST .../{site}/puestos` | — | — |
-| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
+| Instalaciones | `GET /instalaciones` | `POST /instalaciones` (nombre + dirección; código automático), `POST .../{site}/puestos` | — | — |
+| Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar/revisar`, `GET /personal/importar/revision`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
 | Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta; `DELETE .../archivo/{id}` (12 h) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
 
@@ -338,13 +339,11 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 ### Tablero (visión)
 
+- Layout: mapa a la izquierda (satélite/híbrido por defecto; interruptor Satélite / Calle, no el control nativo de Google). Columna derecha: personal activo, puestos sin servicio del mes, parafiscales, anillo de salud afiliatoria.  
 - Semáforo documental (Historia Laboral, Contratación, Certificados, Cursos y capacitación, Afiliaciones y Otros indexadas, parafiscal del mes).  
 - Mapa del contrato: pin navy = sede del cliente; pin cian = instalaciones con coordenadas.  
-- Servicios por puesto (semana / mes / acumulado).  
-- Mantenimientos: últimos, vencidos, sin evidencia.  
-- Novedades abiertas vs. cerradas.  
-- Personal activo y documentos por vencer (30 / 15 / 7 días).  
-- Exportación PDF/Excel para acta de supervisión.
+- Abajo: servicios por puesto, documentos por vencer (30 días), mantenimientos, novedades abiertas.  
+- Exportación PDF/Excel para acta de supervisión: pendiente.
 
 ---
 
@@ -352,9 +351,9 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound`. Clientes: `CreateClientService`. Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService`, `PersistPostService`. Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: `ImportPersonnelWorkbookService`. Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` (sin 404).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
 
-UI: layout compacto gerencial (rail, tarjetas, KPIs). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
+UI: layout compacto gerencial (rail fijo al viewport, scroll interno del menú, flecha para plegar; `localStorage sj-rail`). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
 Local aislado:
 
@@ -430,3 +429,6 @@ El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Cli
 | 2026-09-09 | Esquema unificado en `2026_09_08_100000_create_sj_sig_domain`. Seed de producción: solo admin. Demo A/B queda en `TestingSeeder` para PHPUnit. |
 | 2026-09-09 | Vacío centrado en módulos sin cliente o sin datos (no 404). |
 | 2026-09-09 | Ficha de cliente e instalación georreferenciada (Places/Maps). Tablero: mapa con pin navy (cliente) y cian (instalaciones). |
+| 2026-09-09 | Contrato activo: sesión vieja cae al primer cliente. Código de instalación automático (sigla/iniciales + número). |
+| 2026-09-09 | Carga masiva de personal: dropzone, previa (altas/diffs/errores) e Importar solo al confirmar. Visible con el contrato vacío. |
+| 2026-09-09 | Tablero: mapa satélite + toggle Calle, KPIs a la derecha, anillo de salud afiliatoria. Rail fijo con scroll y plegado. |

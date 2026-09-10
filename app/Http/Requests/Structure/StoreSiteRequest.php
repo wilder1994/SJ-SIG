@@ -4,7 +4,6 @@ namespace App\Http\Requests\Structure;
 
 use App\Http\Requests\Concerns\ValidatesLocation;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 final class StoreSiteRequest extends FormRequest
 {
@@ -18,10 +17,7 @@ final class StoreSiteRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $contractId = $this->attributes->get('currentContract')?->id;
-
         return [
-            'code' => ['required', 'string', 'max:16', Rule::unique('sites', 'code')->where('contract_id', $contractId)],
             'name' => ['required', 'string', 'max:160'],
             ...$this->locationRules(),
         ];

@@ -1,9 +1,16 @@
 @extends('layouts.base')
 
 @section('body')
-<div class="shell">
+<div class="shell" data-shell>
+    <script>
+        try {
+            if (localStorage.getItem('sj-rail') === 'off') {
+                document.currentScript.parentElement.classList.add('is-rail-off');
+            }
+        } catch (e) {}
+    </script>
     <aside class="rail">
-        <div>
+        <div class="rail-brand">
             <div class="brand-mark">SJ-<span>SIG</span></div>
             <p class="muted" style="color:var(--steel);margin:8px 0 0;font-size:11px;">Supervisión contractual</p>
         </div>
@@ -33,7 +40,7 @@
             @endif
             <a href="{{ route('profile.show') }}" class="{{ request()->routeIs('profile.*') ? 'is-on' : '' }}">Mi perfil</a>
         </nav>
-        <form method="post" action="{{ route('logout') }}" style="margin-top:auto">
+        <form class="rail-exit" method="post" action="{{ route('logout') }}">
             @csrf
             <button class="btn ghost" style="color:#e8eef6;border-color:rgba(88,196,255,.28);width:100%">Salir</button>
         </form>
@@ -63,6 +70,7 @@
         @yield('content')
     </main>
 </div>
+<button class="rail-toggle" type="button" data-rail-toggle aria-expanded="true" aria-label="Ocultar menú">‹</button>
 <div class="preview-layer" id="preview-layer" hidden>
     <div class="preview-frame">
         <div class="preview-bar">

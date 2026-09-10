@@ -59,20 +59,22 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 
 | Módulo | Qué es | Quién carga |
 |--------|--------|-------------|
-| **Personal** | Quién es: buscador, Excel, alta unitaria, ficha y foto circular | Interno / admin |
+| **Personal** | Quién es: buscador, Excel (revisar → importar), alta unitaria, ficha y foto circular | Interno / admin |
 | **Documentos** | Listado por vigilante (cédula, carpetas con PDF, documentos reales). En la carpeta: foto, tarjetas y modal. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) | Interno/admin: foto + modal PDF + indexar; entidad consulta tarjetas/modal |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Ficha del universo (identidad, contacto, representante) + georreferencia Google | Solo administración |
-| **Instalaciones** | Plantas/bodegas con dirección/mapa → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
+| **Instalaciones** | Plantas/bodegas con dirección/mapa; código automático (SOS01) → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
-Flujo actual: Clientes (ficha + pin) → Usuarios / Instalaciones (dirección + pin) → Tablero (mapa: navy = cliente, cian = sedes) → Personal → Nuevo empleado (foto circular) → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.
+Flujo actual: Clientes (ficha + pin) → Usuarios / Instalaciones (dirección + pin; código de sede solo) → Tablero (mapa satélite, navy = cliente, cian = sedes) → Personal → Nuevo empleado o plantilla (Revisar → Importar) → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.
+
+El menú izquierdo no se estira con la página: queda al alto de la ventana, scrollea si no caben los módulos y se pliega con la flecha del centro.
 
 Sin cliente o sin datos, cada módulo muestra un aviso centrado con el siguiente paso (no un 404).
 
 **Historia Laboral** (26; EPS/AFP/cesantías del empleado), **Contratación** (9; todos obligatorios), **Certificados** (3), **Cursos y capacitación** (catálogo Super + otro; fecha y entidad), **Afiliaciones** (8; las hace la empresa) y **Otros** (tipo libre, máx. 20; el nombre no puede cruzar con las otras listas): **un solo PDF** (`POST /documentos/carpeta/{person}/lote`). Interno/admin: **Cargar documentos** (modal) → Indexar lote → por cada grupo de páginas elige **carpeta** y **tipo**. Las páginas ya agregadas a la lista salen del preview (Quitar las devuelve). En la carpeta: foto circular, tarjetas (`N de total`), **Volver**, modal con buscador (Ver/Descargar; Eliminar 12 h). N/A en pendientes. Tope: **50 MB**. **Escanear** pendiente. Tras pull: `php artisan migrate:fresh --seed` (o `migrate` si el esquema ya está unificado) y `npm run build`. Tests: `php artisan test` (usan `TestingSeeder`, no el seed de producción).
 
-Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Upsert por cédula dentro del contrato actual.
+Plantilla `ficha_empleados SJ-SIG.xlsx`: fila 1 encabezado, fila 2 ayuda, fila 3+ trabajadores. Arrastrar/pegar/elegir → **Revisar** (altas, cambios de ficha, errores) → **Importar**. Upsert por cédula dentro del cliente actual. Las filas inválidas no se escriben.
 
 ## Repositorio
 

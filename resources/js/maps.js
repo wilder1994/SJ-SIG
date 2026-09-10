@@ -169,9 +169,23 @@ function initOverview(node) {
     const map = new google.maps.Map(node, {
         center: COLOMBIA,
         zoom: 6,
+        mapTypeId: 'hybrid',
         mapTypeControl: false,
         streetViewControl: false,
         fullscreenControl: true,
+    });
+    const wrap = node.closest('[data-overview-wrap]');
+    wrap?.querySelectorAll('[data-map-type-btn]').forEach((button) => {
+        button.addEventListener('click', () => {
+            const type = button.getAttribute('data-map-type-btn');
+            if (!type) {
+                return;
+            }
+            map.setMapTypeId(type);
+            wrap.querySelectorAll('[data-map-type-btn]').forEach((item) => {
+                item.classList.toggle('is-on', item === button);
+            });
+        });
     });
     const bounds = new google.maps.LatLngBounds();
     points.forEach((point) => {

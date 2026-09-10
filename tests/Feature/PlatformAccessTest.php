@@ -24,7 +24,10 @@ final class PlatformAccessTest extends TestCase
             ->assertOk()
             ->assertSee('No hay personal registrado')
             ->assertSee('Crea el primero en Clientes')
-            ->assertSee('Nuevo cliente');
+            ->assertSee('Nuevo cliente')
+            ->assertDontSee('Importar')
+            ->assertDontSee('Revisar')
+            ->assertDontSee('name="workbook"', false);
     }
 
     public function test_internal_user_without_clients_sees_personnel_empty_state(): void
@@ -39,7 +42,9 @@ final class PlatformAccessTest extends TestCase
             ->assertSee('No hay personal registrado')
             ->assertSee('Crea el primero en Clientes')
             ->assertDontSee('Nuevo cliente')
-            ->assertDontSee('Nuevo empleado');
+            ->assertDontSee('Nuevo empleado')
+            ->assertDontSee('Revisar')
+            ->assertDontSee('name="workbook"', false);
     }
 
     public function test_admin_with_client_and_no_people_sees_create_employee_prompt(): void
@@ -63,6 +68,9 @@ final class PlatformAccessTest extends TestCase
             ->assertSee('No hay personal registrado')
             ->assertSee('todavía no hay vigilantes')
             ->assertSee('Nuevo empleado')
+            ->assertSee('Carga masiva')
+            ->assertSee('Revisar')
+            ->assertSee('name="workbook"', false)
             ->assertDontSee('Nuevo cliente');
     }
 

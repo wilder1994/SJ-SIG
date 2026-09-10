@@ -41,11 +41,45 @@ final class ClientLocationTest extends TestCase
             ->assertRedirect(route('clients.index'));
 
         $tenant = Tenant::query()->firstOrFail();
+        $contract = Contract::query()->where('tenant_id', $tenant->id)->firstOrFail();
         $this->assertSame('Municipio de Ejemplo', $tenant->name);
         $this->assertSame('890900111', $tenant->nit);
         $this->assertSame('Cali', $tenant->city);
         $this->assertEqualsWithDelta(3.4516, (float) $tenant->lat, 0.0001);
         $this->assertSame(0, Site::query()->count());
+        $this->assertSame($contract->id, (int) session('current_contract_id'));
+    }
+
+    public function test_stale_session_contract_falls_back_to_existing_client(): void
+    {
+        $tenant = Tenant::query()->create([
+            'name' => 'EPS Occidental',
+            'slug' => 'eps-occidental',
+        ]);
+        $contract = Contract::query()->create([
+            'tenant_id' => $tenant->id,
+            'code' => 'EPS-1',
+            'name' => 'Servicio de vigilancia 2026',
+        ]);
+        $admin = User::factory()->create(['role' => UserRole::AdminEmpresa]);
+
+        $this->actingAs($admin)
+            ->withSession(['current_contract_id' => 9999])
+            ->get('/instalaciones')
+            ->assertOk()
+            ->assertSee('Servicio de vigilancia 2026')
+            ->assertSee('No hay instalaciones')
+            ->assertSee('Crear instalación')
+            ->assertDontSee('Sin cliente activo');
+
+        $this->assertSame($contract->id, (int) session('current_contract_id'));
+
+        $this->actingAs($admin)
+            ->withSession(['current_contract_id' => 9999])
+            ->get('/tablero')
+            ->assertOk()
+            ->assertSee('Servicio de vigilancia 2026')
+            ->assertDontSee('Sin cliente activo');
     }
 
     public function test_admin_can_create_site_with_location(): void
@@ -66,7 +100,6 @@ final class ClientLocationTest extends TestCase
         $this->actingAs($admin)
             ->withSession(['current_contract_id' => $contract->id])
             ->post('/instalaciones', [
-                'code' => 'P1',
                 'name' => 'Planta 1',
                 'address' => 'Carrera 1 # 2-3, Cali',
                 'city' => 'Cali',
@@ -77,7 +110,7 @@ final class ClientLocationTest extends TestCase
             ->assertRedirect();
 
         $site = Site::query()->firstOrFail();
-        $this->assertSame('P1', $site->code);
+        $this->assertSame('CM01', $site->code);
         $this->assertSame('Carrera 1 # 2-3, Cali', $site->address);
         $this->assertEqualsWithDelta(3.46, (float) $site->lat, 0.0001);
     }
@@ -114,6 +147,9 @@ final class ClientLocationTest extends TestCase
             ->assertSee('data-overview-map', false)
             ->assertSee('Cliente mapa')
             ->assertSee('Planta 1')
+            ->assertSee('Satélite')
+            ->assertSee('Calle')
+            ->assertSee('data-map-type-btn="hybrid"', false)
             ->assertSee('map-dot client', false)
             ->assertSee('map-dot site', false);
     }

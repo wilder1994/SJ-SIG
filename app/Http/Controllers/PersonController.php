@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Personnel\ConfirmPersonnelImportRequest;
 use App\Http\Requests\Personnel\ImportPersonnelRequest;
 use App\Http\Requests\Personnel\StorePersonPhotoRequest;
 use App\Http\Requests\Personnel\StorePersonRequest;
@@ -10,12 +11,14 @@ use App\Models\Person;
 use App\Repositories\Contracts\PersonRepositoryInterface;
 use App\Services\Personnel\CreatePersonService;
 use App\Services\Personnel\ImportPersonnelWorkbookService;
+use App\Services\Personnel\PersonnelImportDraftStore;
 use App\Services\Personnel\StorePersonPhotoService;
 use App\Support\Files\StoredFileResponder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class PersonController extends Controller
@@ -23,6 +26,7 @@ final class PersonController extends Controller
     public function __construct(
         private readonly PersonRepositoryInterface $people,
         private readonly ImportPersonnelWorkbookService $importer,
+        private readonly PersonnelImportDraftStore $drafts,
         private readonly CreatePersonService $creator,
         private readonly StorePersonPhotoService $photos,
     ) {}
@@ -89,16 +93,95 @@ final class PersonController extends Controller
         return view('people.show', ['person' => $model]);
     }
 
-    public function import(ImportPersonnelRequest $request): RedirectResponse
+    public function preview(ImportPersonnelRequest $request): RedirectResponse
     {
         /** @var Contract $contract */
         $contract = $request->attributes->get('currentContract');
-        $path = $request->file('workbook')?->getRealPath();
-        abort_if($path === false || $path === null, 422);
+        $file = $request->file('workbook');
+        abort_if($file === null, 422);
 
-        $result = $this->importer->execute($contract, $path);
+        $token = $this->drafts->put((int) $request->user()->id, $contract->id, $file);
+        $request->session()->put('personnel_import_token', $token);
 
-        return back()->with('import', $result);
+        return redirect()->route('people.import.review');
+    }
+
+    public function review(Request $request): View|RedirectResponse
+    {
+        abort_unless($request->user()?->role->canImportPersonnel() ?? false, 403);
+
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $loaded = $this->draftFor($request, $contract);
+        if ($loaded === null) {
+            return redirect()->route('people.index')->with('status', 'Vuelva a cargar el Excel para revisar la plantilla.');
+        }
+
+        [$token, $draft] = $loaded;
+
+        try {
+            $analysis = $this->importer->preview($contract, $draft['absolute']);
+        } catch (RuntimeException $exception) {
+            $this->drafts->forget((int) $request->user()->id, $token);
+            $request->session()->forget('personnel_import_token');
+
+            return redirect()->route('people.index')->withErrors(['workbook' => $exception->getMessage()]);
+        }
+
+        return view('people.import-review', [
+            'token' => $token,
+            'filename' => $draft['filename'],
+            'analysis' => $analysis,
+        ]);
+    }
+
+    public function import(ConfirmPersonnelImportRequest $request): RedirectResponse
+    {
+        /** @var Contract $contract */
+        $contract = $request->attributes->get('currentContract');
+        $loaded = $this->draftFor($request, $contract);
+        if ($loaded === null) {
+            return redirect()->route('people.index')->with('status', 'La revisión expiró. Vuelva a cargar el Excel.');
+        }
+
+        [$token, $draft] = $loaded;
+
+        try {
+            $result = $this->importer->commit($contract, $draft['absolute']);
+        } catch (RuntimeException $exception) {
+            return redirect()->route('people.import.review')->withErrors(['workbook' => $exception->getMessage()]);
+        }
+
+        $this->drafts->forget((int) $request->user()->id, $token);
+        $request->session()->forget('personnel_import_token');
+
+        $errors = count($result['errors']);
+
+        return redirect()->route('people.index')->with('status', sprintf(
+            'Importación lista. Altas %d · Actualizaciones %d · Sin cambios %d · Errores %d.',
+            $result['created'],
+            $result['updated'],
+            $result['unchanged'],
+            $errors,
+        ));
+    }
+
+    /**
+     * @return array{0: string, 1: array{contract_id: int, path: string, filename: string, absolute: string}}|null
+     */
+    private function draftFor(Request $request, Contract $contract): ?array
+    {
+        $token = (string) ($request->input('token') ?: $request->session()->get('personnel_import_token') ?: '');
+        if ($token === '') {
+            return null;
+        }
+
+        $draft = $this->drafts->get((int) $request->user()->id, $token);
+        if ($draft === null || $draft['contract_id'] !== $contract->id) {
+            return null;
+        }
+
+        return [$token, $draft];
     }
 
     private function personInContract(Request $request, int $person): Person

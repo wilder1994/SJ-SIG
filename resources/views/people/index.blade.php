@@ -6,15 +6,26 @@
 @php
     $hasPeople = $people->isNotEmpty();
     $searching = filled(request('q'));
+    $canCreate = auth()->user()->role->canUploadEvidence();
+    $canImport = auth()->user()->role->canImportPersonnel();
 @endphp
 
-@if(! $hasPeople && ! $searching)
-    <x-empty-panel kicker="Sin personal" title="No hay personal registrado">
+@if(! $currentContract)
+    <x-empty-panel kicker="Sin personal" title="No hay personal registrado" />
+@elseif(! $hasPeople && ! $searching)
+    <article class="card" style="max-width:820px">
+        <p class="kicker">Sin personal</p>
+        <h2 class="display" style="font-size:26px;margin:4px 0 8px">No hay personal registrado</h2>
         <p class="muted">En este contrato todavía no hay vigilantes. Crea uno o importa la plantilla SJ-SIG.</p>
-        @if(auth()->user()->role->canUploadEvidence())
+        @if($canCreate)
             <a class="btn" href="{{ route('people.create') }}" style="margin-top:14px">Nuevo empleado</a>
         @endif
-    </x-empty-panel>
+        @if($canImport)
+            <div style="margin-top:18px">
+                @include('people._import')
+            </div>
+        @endif
+    </article>
 @else
 <div class="split">
     <article class="card">
@@ -23,7 +34,7 @@
                 <input type="search" name="q" value="{{ request('q') }}" placeholder="Nombre o cédula" style="flex:1">
                 <button class="btn" type="submit">Buscar</button>
             </form>
-            @if(auth()->user()->role->canUploadEvidence())
+            @if($canCreate)
                 <a class="btn" href="{{ route('people.create') }}">Nuevo empleado</a>
             @endif
         </div>
@@ -44,23 +55,8 @@
         </table>
         <div style="margin-top:12px">{{ $people->links() }}</div>
     </article>
-    @if(auth()->user()->role->canImportPersonnel())
-    <article class="card">
-        <p class="kicker">Carga masiva</p>
-        <h2 class="display" style="font-size:22px;margin:6px 0 10px">Plantilla SJ-SIG</h2>
-        <p class="muted">Fila 1 encabezado, fila 2 ayuda, desde la 3 trabajadores. Los PDF se cargan en Documentos → carpeta del vigilante.</p>
-        <form method="post" action="{{ route('people.import') }}" enctype="multipart/form-data" style="margin-top:14px" class="field">
-            @csrf
-            <input type="file" name="workbook" accept=".xlsx,.xls" required>
-            <button class="btn" type="submit">Importar</button>
-        </form>
-        @if(session('import'))
-            <p style="margin-top:12px">Altas {{ session('import')['created'] }} · Actualizaciones {{ session('import')['updated'] }}</p>
-            @foreach(session('import')['errors'] as $error)
-                <p class="muted">Fila {{ $error['row'] }}: {{ $error['message'] }}</p>
-            @endforeach
-        @endif
-    </article>
+    @if($canImport)
+        @include('people._import')
     @endif
 </div>
 @endif

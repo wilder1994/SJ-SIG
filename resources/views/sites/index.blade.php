@@ -3,19 +3,25 @@
 @section('title', 'Instalaciones · SJ-SIG')
 
 @section('content')
-@if($sites->isEmpty())
+@if(! $currentContract)
     <x-empty-panel kicker="Sin instalaciones" title="No hay instalaciones">
-        <p class="muted">En este cliente todavía no hay plantas, bodegas ni puestos. Crea la primera instalación con su dirección.</p>
+        <p class="muted">Aún no hay un cliente activo. Crea el primero en Clientes; después podrás usar este módulo.</p>
+        @if(auth()->user()->role->canManageClients())
+            <a class="btn" href="{{ route('clients.create') }}" style="margin-top:14px">Nuevo cliente</a>
+        @endif
     </x-empty-panel>
-    @if($currentContract && auth()->user()->role->canManageStructure())
-        <article class="card" style="max-width:820px;margin:16px auto 0">
-            <p class="kicker">Nueva sede</p>
-            <form method="post" action="{{ route('sites.store') }}" class="form-grid">
-                @csrf
-                @include('sites._form')
-            </form>
-        </article>
+@elseif($sites->isEmpty())
+<article class="card" style="max-width:820px">
+    <p class="kicker">Sin instalaciones</p>
+    <h2 class="display" style="font-size:26px;margin:4px 0 8px">No hay instalaciones</h2>
+    <p class="muted">En este cliente todavía no hay plantas, bodegas ni puestos. Crea la primera con su dirección.</p>
+    @if(auth()->user()->role->canManageStructure())
+        <form method="post" action="{{ route('sites.store') }}" class="form-grid" style="margin-top:16px">
+            @csrf
+            @include('sites._form')
+        </form>
     @endif
+</article>
 @else
 <article class="card" style="margin-bottom:12px">
     <p class="kicker">Estructura del cliente</p>

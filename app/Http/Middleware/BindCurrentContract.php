@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Contract;
 use App\Models\User;
 use App\Repositories\Contracts\ContractRepositoryInterface;
 use Closure;
@@ -22,22 +23,15 @@ final class BindCurrentContract
         }
 
         $accessible = $this->contracts->listAccessible($user);
-        $requested = $request->integer('contract') ?: (int) $request->session()->get('current_contract_id', 0);
-
-        if ($user->boundContractId() !== null) {
-            $contract = $this->contracts->findAccessibleById($user, $user->boundContractId());
-        } elseif ($requested > 0) {
-            $contract = $this->contracts->findAccessibleById($user, $requested);
-        } else {
-            $contract = $accessible->first();
-        }
+        $contract = $this->resolveContract($request, $user, $accessible);
 
         if ($contract === null) {
-            if ($user->role->seesAllClients()) {
-                $request->attributes->set('currentContract', null);
-                view()->share('currentContract', null);
-                view()->share('accessibleContracts', $accessible);
+            $request->session()->forget('current_contract_id');
+            $request->attributes->set('currentContract', null);
+            view()->share('currentContract', null);
+            view()->share('accessibleContracts', $accessible);
 
+            if ($user->role->seesAllClients()) {
                 return $next($request);
             }
 
@@ -51,5 +45,26 @@ final class BindCurrentContract
         view()->share('accessibleContracts', $accessible);
 
         return $next($request);
+    }
+
+    /** @param  \Illuminate\Support\Collection<int, Contract>  $accessible */
+    private function resolveContract(Request $request, User $user, $accessible): ?Contract
+    {
+        $requested = $request->integer('contract') ?: (int) $request->session()->get('current_contract_id', 0);
+
+        if ($user->boundContractId() !== null) {
+            return $this->contracts->findAccessibleById($user, $user->boundContractId());
+        }
+
+        if ($requested > 0) {
+            $chosen = $this->contracts->findAccessibleById($user, $requested);
+            if ($chosen instanceof Contract) {
+                return $chosen;
+            }
+        }
+
+        $first = $accessible->first();
+
+        return $first instanceof Contract ? $first : null;
     }
 }

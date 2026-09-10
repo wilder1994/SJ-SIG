@@ -2,6 +2,29 @@ import { bootMaps } from './maps.js';
 
 bootMaps();
 
+(function initRail() {
+    const shell = document.querySelector('[data-shell]');
+    const toggle = document.querySelector('[data-rail-toggle]');
+    if (!shell || !toggle) {
+        return;
+    }
+
+    const apply = (off) => {
+        shell.classList.toggle('is-rail-off', off);
+        toggle.setAttribute('aria-expanded', off ? 'false' : 'true');
+        toggle.setAttribute('aria-label', off ? 'Mostrar menú' : 'Ocultar menú');
+        toggle.textContent = off ? '›' : '‹';
+        try {
+            localStorage.setItem('sj-rail', off ? 'off' : 'on');
+        } catch {
+            // ignore quota / private mode
+        }
+    };
+
+    apply(shell.classList.contains('is-rail-off'));
+    toggle.addEventListener('click', () => apply(! shell.classList.contains('is-rail-off')));
+})();
+
 const layer = document.getElementById('preview-layer');
 const frame = document.getElementById('preview-iframe');
 const title = document.getElementById('preview-title');
@@ -261,7 +284,8 @@ photoInput?.addEventListener('change', () => {
         const name = card.querySelector('[data-file-name]');
         const size = card.querySelector('[data-file-size]');
         const icon = card.querySelector('[data-file-icon]');
-        const isImage = !!file && (/^image\//.test(file.type || '') || /\.(jpe?g|png)$/i.test(file.name));
+        const isExcel = !!file && (/\.(xlsx|xls)$/i.test(file.name) || /spreadsheet|excel/i.test(file.type || ''));
+        const isImage = !!file && !isExcel && (/^image\//.test(file.type || '') || /\.(jpe?g|png)$/i.test(file.name));
         if (empty) {
             empty.hidden = !!file;
         }
@@ -286,9 +310,10 @@ photoInput?.addEventListener('change', () => {
             size.textContent = formatSize(file.size);
         }
         if (icon) {
-            icon.textContent = isImage ? 'IMG' : 'PDF';
+            icon.textContent = isExcel ? 'XLS' : (isImage ? 'IMG' : 'PDF');
+            icon.classList.toggle('drop-icon-xls', isExcel);
             icon.classList.toggle('drop-icon-img', isImage);
-            icon.classList.toggle('drop-icon-pdf', !isImage);
+            icon.classList.toggle('drop-icon-pdf', !isImage && !isExcel);
         }
     }
 

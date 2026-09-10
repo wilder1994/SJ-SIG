@@ -38,7 +38,11 @@ final class ClientController extends Controller
 
     public function store(StoreClientRequest $request): RedirectResponse
     {
-        $this->creator->execute($request->clientPayload());
+        $tenant = $this->creator->execute($request->clientPayload());
+        $contractId = $tenant->primaryContract?->id;
+        if ($contractId) {
+            $request->session()->put('current_contract_id', $contractId);
+        }
 
         return redirect()->route('clients.index')->with('status', 'Cliente creado. Ya puede asignar usuarios y armar su estructura.');
     }
