@@ -152,7 +152,8 @@ final class PlatformAccessTest extends TestCase
             ->assertOk()
             ->assertSee('Planta 1')
             ->assertSee('Portería')
-            ->assertSee('3 vigilantes')
+            ->assertSee('4 vigilantes')
+            ->assertDontSee('Crear instalación')
             ->assertDontSee('name="code"');
 
         $this->actingAs($supervisorA)

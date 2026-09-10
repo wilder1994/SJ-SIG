@@ -999,6 +999,28 @@ input[type="search"]:focus,
 
 .import-diff { font-size: 13px; color: var(--ink-soft); }
 
+.post-block {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    background: #fff;
+}
+
+.staff-row {
+    display: grid;
+    grid-template-columns: 1fr 120px;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.service-event {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.service-event:last-child { border-bottom: 0; }
+
 .dot { width: 7px; height: 7px; border-radius: 99px; display: inline-block; }
 .dot.ok { background: var(--ok); }
 .dot.warn { background: var(--warn); }

@@ -7,6 +7,7 @@ use App\Enums\CertificateDocumentType;
 use App\Enums\CourseDocumentType;
 use App\Enums\DocumentFolder;
 use App\Enums\LaborHistoryDocumentType;
+use App\Enums\GuardRole;
 use App\Enums\ElectronicAssetKind;
 use App\Enums\NoveltyStatus;
 use App\Enums\UserRole;
@@ -144,16 +145,26 @@ final class TestingSeeder extends Seeder
             ['site' => $planta, 'code' => 'POR', 'name' => 'Portería', 'hours' => 12, 'slots' => 3],
             ['site' => $planta, 'code' => 'RON', 'name' => 'Ronda', 'hours' => 8, 'slots' => 1],
             ['site' => $bodega, 'code' => 'PK', 'name' => 'Parqueadero', 'hours' => 24, 'slots' => 2],
-        ])->map(fn (array $row) => Post::query()->create([
-            'tenant_id' => $tenant->id,
-            'contract_id' => $contract->id,
-            'site_id' => $row['site']->id,
-            'code' => $row['code'],
-            'name' => $row['name'],
-            'city' => $city,
-            'shift_hours' => $row['hours'],
-            'guard_slots' => $row['slots'],
-        ]));
+        ])->map(function (array $row) use ($tenant, $contract, $city) {
+            $post = Post::query()->create([
+                'tenant_id' => $tenant->id,
+                'contract_id' => $contract->id,
+                'site_id' => $row['site']->id,
+                'code' => $row['code'],
+                'name' => $row['name'],
+                'city' => $city,
+                'shift_hours' => $row['hours'],
+                'guard_slots' => $row['slots'],
+            ]);
+            $post->staffings()->create([
+                'tenant_id' => $tenant->id,
+                'contract_id' => $contract->id,
+                'role' => GuardRole::Vigilante,
+                'slots' => $row['slots'],
+            ]);
+
+            return $post;
+        });
 
         $month = CarbonImmutable::now()->startOfMonth();
 

@@ -72,11 +72,31 @@ Empresa SJ (dueña de SJ-SIG)
               └── Instalación (planta, bodega, sede)
                     └── Puesto (portería, ronda…)
                           · modalidad: 8 / 12 / 24 h
-                          · unidades: N vigilantes (cupo, no el listado de personas)
+                          · unidades por cargo (cupo, no el listado de personas)
               └── Personal, documentos, parafiscales, electrónica, servicios, novedades
 ```
 
 **Instalaciones y puestos** definen la capacidad contratada. El módulo **Personal** sigue siendo quién es cada vigilante; la asignación persona ↔ puesto queda para un paso posterior.
+
+### Instalaciones (hecho)
+
+Listado en tabla (código, sede, ciudad, puestos, unidades) + **Crear instalación**. Admin e interno crean y editan; el supervisor de la entidad consulta (403 en `/instalaciones/nueva`).
+
+**Ficha:** nombre + mapa. **Puestos:** nombre, modalidad (8 / 12 / 24 h) y líneas de cargo + unidades. Cargos (`GuardRole`): vigilante, escolta, supervisor de patrulla, operador de medios tecnológicos. Código de puesto: `{códigoSede}-01`. Dotación vigente en `post_staffings`; `posts.guard_slots` es la suma (tablero / servicios).
+
+**Alta:** textarea “Cómo inicia el servicio” + vigente desde / solicitado por. Queda un asiento `inicio` en `site_service_events`.
+
+**Edición:** el sistema compara ficha, puestos y cupos. Si hay diferencia, pide motivo nombrando la parte. El usuario no elige el tipo.
+
+| Parte | Qué mira | Mensaje |
+|--------|----------|---------|
+| Instalación | Nombre, dirección, ciudad, mapa | Indique el motivo del cambio en instalación |
+| Puesto | Nombre del puesto, modalidad, alta de puesto | Indique el motivo del cambio en puesto |
+| Personal | Cargo y cantidad de unidades del puesto | Indique el motivo del cambio en personal |
+
+Dos o tres a la vez: *Indique el motivo del cambio en puesto y personal* (o *instalación, puesto y personal*). “Personal” aquí es la **dotación del puesto**, no el módulo de empleados.
+
+El asiento `cambio` guarda fecha `now()`, el texto del usuario, `from_summary` / `to_summary` (p. ej. *Cambio en personal: 3 vigilantes → 2 vigilantes*) y `snapshot.scopes`. No se pisa el histórico. En edición ya no se piden solicitado por, último turno ni vigente desde. Tests: `SiteStructureTest`.
 
 El usuario de **Operaciones** (jefe, coordinador, analista, patrulla) también va amarrado a **un cliente** y aparece en **Equipo SJ** para que la entidad vea quién de SJ está asignado. Gestión humana (`interno`) no sale en esa lista.
 
@@ -98,7 +118,7 @@ Reglas de aislamiento:
 - Entidad, operaciones y técnico: un cliente; 404 al cruzar IDs.
 - Perfil de plataforma: solo lectura. Alta/edición de usuarios: solo Administración.
 - Storage: `tenants/{tenant_id}/contracts/{contract_id}/...` y `avatars/` (no se versionan).
-- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest`.
+- Pruebas: `TenantIsolationTest` + `PlatformAccessTest` + `LaborHistoryIndexingTest` + `SiteStructureTest`.
 
 ---
 
@@ -312,7 +332,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | # | Módulo | Estado v1 local |
 |---|--------|-----------------|
 | 1 | Tenancy, roles, test de aislamiento | Hecho (`TenantIsolationTest` + `PlatformAccessTest`) |
-| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Ficha de cliente + georreferencia. Instalación con la misma dirección. Código de sede automático (iniciales/sigla del cliente + número, p. ej. SOS01). Capacidad: modalidad + unidades. Asignación persona↔puesto pendiente |
+| 2 | Clientes + usuarios + instalaciones/puestos | Hecho. Tabla + Ver/Editar/Crear. Puestos con modalidad y unidades por cargo. Bitácora: el sistema detecta si el cambio es en instalación, puesto o personal y pide el motivo. Código de sede automático. Asignación persona↔puesto pendiente |
 | 3 | Personal + import Excel + gestor documental | Hecho. Import: dropzone + revisar + confirmar. Un PDF + indexador (HV 26 + Contratación 9 + Certificados 3 + Cursos 25+otro + Afiliaciones 8 + Otros 20 tipo libre). Escáner pendiente |
 | 4 | Asignación persona ↔ puesto | Pendiente |
 | 5 | Cursos (título + fecha + acta) | Hecho. Cursos y capacitación indexados (catálogo Super + otro; fecha y entidad) |
@@ -330,7 +350,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | Clientes | `GET /clientes` | `GET/POST /clientes`, `PUT /clientes/{id}` (ficha + lat/lng/`place_id`) | — | — |
 | Usuarios | `GET /usuarios` | `GET/POST /usuarios`, `PUT /usuarios/{id}` | foto `/usuarios/foto/{id}` | — |
 | Equipo SJ | `GET /equipo` | — | — | — |
-| Instalaciones | `GET /instalaciones` | `POST /instalaciones` (nombre + dirección; código automático), `POST .../{site}/puestos` | — | — |
+| Instalaciones | `GET /instalaciones` | `GET /instalaciones/nueva`, `POST /instalaciones`, `GET .../{id}`, `GET .../{id}/editar`, `PUT .../{id}` (puestos + cargos; motivo si cambia instalación/puesto/personal), `POST .../{id}/puestos` | ficha + bitácora | — |
 | Personal | `GET /personal` | `GET /personal/nuevo`, `POST /personal`, `POST /personal/importar/revisar`, `GET /personal/importar/revision`, `POST /personal/importar`; foto `GET/POST .../foto` | foto `/personal/{id}/foto` | — |
 | Documentos | `GET /documentos` | `GET /documentos/carpeta/{person}`; lote `POST/GET .../lote` (+ `/ver`, indexar); N/A por carpeta; `DELETE .../archivo/{id}` (12 h) | `.../archivo/{id}/ver` | `.../archivo/{id}/descarga` |
 | Parafiscales | `GET /parafiscales` | `POST /parafiscales` | `.../{id}/ver` | `.../{id}/descarga` |
@@ -351,7 +371,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Dotación: `post_staffings` (`GuardRole`) + bitácora `site_service_events` (el servicio clasifica el cambio en instalación / puesto / personal). Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta unitaria: `CreatePersonService`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
 
 UI: layout compacto gerencial (rail fijo al viewport, scroll interno del menú, flecha para plegar; `localStorage sj-rail`). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -432,3 +452,5 @@ El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Cli
 | 2026-09-09 | Contrato activo: sesión vieja cae al primer cliente. Código de instalación automático (sigla/iniciales + número). |
 | 2026-09-09 | Carga masiva de personal: dropzone, previa (altas/diffs/errores) e Importar solo al confirmar. Visible con el contrato vacío. |
 | 2026-09-09 | Tablero: mapa satélite + toggle Calle, KPIs a la derecha, anillo de salud afiliatoria. Rail fijo con scroll y plegado. |
+| 2026-09-09 | Instalaciones: tabla + Ver/Editar/Crear. Puestos con cargo (vigilante, escolta, supervisor, operador). Bitácora de inicio y de cambio. |
+| 2026-09-09 | Motivo de edición: el sistema detecta si cambió instalación, puesto o personal y pide el motivo nombrando esa parte. Fecha del asiento = ahora. |

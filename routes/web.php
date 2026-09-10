@@ -48,7 +48,11 @@ Route::middleware(['auth', 'user.active', 'password.changed', 'contract.bound', 
     Route::put('/usuarios/{user}', [PlatformUserController::class, 'update'])->name('users.update');
     Route::get('/equipo', OperationsTeamController::class)->name('operations.index');
     Route::get('/instalaciones', [SiteController::class, 'index'])->name('sites.index');
+    Route::get('/instalaciones/nueva', [SiteController::class, 'create'])->name('sites.create');
     Route::post('/instalaciones', [SiteController::class, 'store'])->name('sites.store');
+    Route::get('/instalaciones/{site}', [SiteController::class, 'show'])->name('sites.show');
+    Route::get('/instalaciones/{site}/editar', [SiteController::class, 'edit'])->name('sites.edit');
+    Route::put('/instalaciones/{site}', [SiteController::class, 'update'])->name('sites.update');
     Route::post('/instalaciones/{site}/puestos', [SiteController::class, 'storePost'])->name('sites.posts.store');
     Route::get('/personal', [PersonController::class, 'index'])->name('people.index');
     Route::get('/personal/nuevo', [PersonController::class, 'create'])->name('people.create');

@@ -63,7 +63,7 @@ Firewall: permitir TCP **8086** en red privada si otros PCs no entran. En Larago
 | **Documentos** | Listado por vigilante (cédula, carpetas con PDF, documentos reales). En la carpeta: foto, tarjetas y modal. HV (26), Contratación (9), Certificados (3), Cursos y capacitación (25+otro), Afiliaciones (8) y Otros (hasta 20, tipo libre) | Interno/admin: foto + modal PDF + indexar; entidad consulta tarjetas/modal |
 | **Parafiscales** | PILA de empresa por periodo | Interno / admin |
 | **Clientes / Usuarios** | Ficha del universo (identidad, contacto, representante) + georreferencia Google | Solo administración |
-| **Instalaciones** | Plantas/bodegas con dirección/mapa; código automático (SOS01) → puestos (modalidad + unidades) | Interno / admin crean; entidad consulta |
+| **Instalaciones** | Tabla de sedes (Ver/Editar/Crear). Código automático. Puestos con modalidad y unidades por cargo. Si cambia ficha, puesto o cupos, pide el motivo de esa parte y lo deja en bitácora | Interno / admin crean; entidad consulta |
 | **Equipo SJ** | Operaciones asignadas al cliente | Visible para la entidad |
 
 Flujo actual: Clientes (ficha + pin) → Usuarios / Instalaciones (dirección + pin; código de sede solo) → Tablero (mapa satélite, navy = cliente, cian = sedes) → Personal → Nuevo empleado o plantilla (Revisar → Importar) → Documentos → Ver carpeta (tarjetas) → **Cargar documentos**.

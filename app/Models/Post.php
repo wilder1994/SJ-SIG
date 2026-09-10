@@ -41,8 +41,28 @@ class Post extends Model
         return $this->belongsTo(Site::class);
     }
 
+    public function staffings(): HasMany
+    {
+        return $this->hasMany(PostStaffing::class);
+    }
+
     public function serviceDeliveries(): HasMany
     {
         return $this->hasMany(ServiceDelivery::class);
+    }
+
+    public function unitsLabel(): string
+    {
+        $lines = $this->staffings
+            ->filter(fn (PostStaffing $row) => $row->slots > 0)
+            ->map(fn (PostStaffing $row) => $row->role->plural($row->slots));
+
+        if ($lines->isNotEmpty()) {
+            return $lines->implode(' · ');
+        }
+
+        $n = (int) $this->guard_slots;
+
+        return $n.' vigilante'.($n === 1 ? '' : 's');
     }
 }

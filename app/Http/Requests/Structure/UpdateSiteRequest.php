@@ -8,7 +8,7 @@ use App\Http\Requests\Concerns\ValidatesLocation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-final class StoreSiteRequest extends FormRequest
+final class UpdateSiteRequest extends FormRequest
 {
     use ValidatesLocation;
 
@@ -22,15 +22,14 @@ final class StoreSiteRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:160'],
-            'service_start' => ['nullable', 'string', 'max:2000'],
-            'requested_by' => ['nullable', 'string', 'max:160'],
-            'effective_on' => ['nullable', 'date'],
             'posts' => ['nullable', 'array'],
+            'posts.*.id' => ['nullable', 'integer'],
             'posts.*.name' => ['nullable', 'string', 'max:160'],
             'posts.*.shift_hours' => ['nullable', Rule::enum(ServiceModality::class)],
             'posts.*.staffings' => ['nullable', 'array'],
             'posts.*.staffings.*.role' => ['required_with:posts.*.staffings', Rule::enum(GuardRole::class)],
             'posts.*.staffings.*.slots' => ['required_with:posts.*.staffings', 'integer', 'min:1', 'max:99'],
+            'change_reason' => ['nullable', 'string', 'max:2000'],
             ...$this->locationRules(),
         ];
     }

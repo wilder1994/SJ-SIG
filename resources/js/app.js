@@ -25,6 +25,58 @@ bootMaps();
     toggle.addEventListener('click', () => apply(! shell.classList.contains('is-rail-off')));
 })();
 
+(function initSiteForm() {
+    const form = document.querySelector('[data-site-form]');
+    const list = form?.querySelector('[data-post-list]');
+    const template = form?.querySelector('[data-post-template]');
+    if (!form || !list || !template) {
+        return;
+    }
+
+    const rewrite = () => {
+        [...list.querySelectorAll('[data-post-block]')].forEach((block, index) => {
+            block.querySelectorAll('input, select, textarea').forEach((field) => {
+                const name = field.getAttribute('name') || '';
+                if (name.includes('[id]')) {
+                    field.name = `posts[${index}][id]`;
+                } else if (name.includes('[shift_hours]')) {
+                    field.name = `posts[${index}][shift_hours]`;
+                } else if (name.endsWith('[name]')) {
+                    field.name = `posts[${index}][name]`;
+                }
+            });
+            [...block.querySelectorAll('[data-staff-row]')].forEach((row, staffIndex) => {
+                row.querySelectorAll('select').forEach((field) => {
+                    field.name = `posts[${index}][staffings][${staffIndex}][role]`;
+                });
+                row.querySelectorAll('input[type="number"]').forEach((field) => {
+                    field.name = `posts[${index}][staffings][${staffIndex}][slots]`;
+                });
+            });
+        });
+    };
+
+    form.querySelector('[data-add-post]')?.addEventListener('click', () => {
+        list.insertAdjacentHTML('beforeend', template.innerHTML);
+        rewrite();
+    });
+
+    form.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-add-staff]');
+        if (! button) {
+            return;
+        }
+        const block = button.closest('[data-post-block]');
+        const staffTemplate = block?.querySelector('[data-staff-template]');
+        const staffList = block?.querySelector('[data-staff-list]');
+        if (! staffTemplate || ! staffList) {
+            return;
+        }
+        staffList.insertAdjacentHTML('beforeend', staffTemplate.innerHTML);
+        rewrite();
+    });
+})();
+
 const layer = document.getElementById('preview-layer');
 const frame = document.getElementById('preview-iframe');
 const title = document.getElementById('preview-title');
