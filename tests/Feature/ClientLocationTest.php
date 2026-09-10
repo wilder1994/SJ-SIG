@@ -150,7 +150,10 @@ final class ClientLocationTest extends TestCase
             ->assertSee('Satélite')
             ->assertSee('Calle')
             ->assertSee('data-map-type-btn="hybrid"', false)
-            ->assertSee('map-dot client', false)
-            ->assertSee('map-dot site', false);
+            ->assertSee('img/pin-cliente.png', false)
+            ->assertSee('img/pin-instalacion.png', false)
+            ->assertSee('sites_count', false)
+            ->assertSee('posts_count', false)
+            ->assertSee('units_count', false);
     }
 }

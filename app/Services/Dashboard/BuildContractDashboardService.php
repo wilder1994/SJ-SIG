@@ -97,16 +97,17 @@ final class BuildContractDashboardService
             ])
             ->all();
 
-        $contract->loadMissing(['tenant', 'sites']);
+        $contract->loadMissing(['tenant', 'sites.posts.staffings']);
         $mapPoints = [];
         $tenant = $contract->tenant;
         if ($tenant?->hasCoordinates()) {
             $mapPoints[] = [
                 'kind' => 'client',
-                'label' => $tenant->name,
+                'label' => $tenant->displayName(),
                 'address' => $tenant->address,
                 'lat' => (float) $tenant->lat,
                 'lng' => (float) $tenant->lng,
+                'sites_count' => $contract->sites->count(),
             ];
         }
         foreach ($contract->sites as $site) {
@@ -119,6 +120,8 @@ final class BuildContractDashboardService
                 'address' => $site->address,
                 'lat' => (float) $site->lat,
                 'lng' => (float) $site->lng,
+                'posts_count' => $site->posts->count(),
+                'units_count' => $site->unitsCount(),
             ];
         }
 

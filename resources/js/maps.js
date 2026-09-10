@@ -1,5 +1,9 @@
-const COLORS = { client: '#0b3d91', site: '#58c4ff' };
 const COLOMBIA = { lat: 4.570868, lng: -74.297333 };
+const PIN_FILES = {
+    client: '/img/pin-cliente.png',
+    site: '/img/pin-instalacion.png',
+};
+const PIN_SIZE = { width: 42, height: 51 };
 
 function mapsKey() {
     return typeof window.SJ_MAPS_KEY === 'string' ? window.SJ_MAPS_KEY.trim() : '';
@@ -28,14 +32,55 @@ function loadGoogle() {
     return window.__sjMapsLoading;
 }
 
-function pinIcon(color) {
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function countLabel(count, one, many, empty) {
+    const n = Number(count) || 0;
+    if (n === 0) {
+        return empty;
+    }
+
+    return n === 1 ? `1 ${one}` : `${n} ${many}`;
+}
+
+function tipMeta(point) {
+    if (point.kind === 'client') {
+        return countLabel(point.sites_count, 'instalación', 'instalaciones', 'Sin instalaciones');
+    }
+
+    return [
+        countLabel(point.posts_count, 'puesto', 'puestos', 'Sin puestos'),
+        countLabel(point.units_count, 'unidad', 'unidades', 'sin unidades'),
+    ].join(' · ');
+}
+
+function tipHtml(point) {
+    const kind = point.kind === 'client' ? 'client' : 'site';
+    const address = point.address ? `<p class="sj-map-tip-addr">${escapeHtml(point.address)}</p>` : '';
+
+    return `<div class="sj-map-tip is-${kind}">
+        <p class="sj-map-tip-kicker">${kind === 'client' ? 'Cliente' : 'Instalación'}</p>
+        <p class="sj-map-tip-title">${escapeHtml(point.label)}</p>
+        ${address}
+        <p class="sj-map-tip-meta">${escapeHtml(tipMeta(point))}</p>
+    </div>`;
+}
+
+function pinIcon(kind) {
+    const size = new google.maps.Size(PIN_SIZE.width, PIN_SIZE.height);
+
     return {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 10,
-        fillColor: color,
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: 2,
+        url: PIN_FILES[kind] || PIN_FILES.site,
+        scaledSize: size,
+        size,
+        origin: new google.maps.Point(0, 0),
+        anchor: new google.maps.Point(PIN_SIZE.width / 2, PIN_SIZE.height),
     };
 }
 
@@ -93,11 +138,12 @@ function initPicker(root) {
         streetViewControl: false,
         fullscreenControl: false,
     });
+    const kind = root.getAttribute('data-location-kind') === 'site' ? 'site' : 'client';
     const marker = new google.maps.Marker({
         map,
         position: { lat: startLat, lng: startLng },
         draggable: true,
-        icon: pinIcon(COLORS.client),
+        icon: pinIcon(kind),
     });
 
     const syncMarker = (lat, lng, zoom) => {
@@ -188,21 +234,36 @@ function initOverview(node) {
         });
     });
     const bounds = new google.maps.LatLngBounds();
+    let openTip = null;
     points.forEach((point) => {
         const position = { lat: Number(point.lat), lng: Number(point.lng) };
         if (!Number.isFinite(position.lat) || !Number.isFinite(position.lng)) {
             return;
         }
+        const kind = point.kind === 'client' ? 'client' : 'site';
         const marker = new google.maps.Marker({
             map,
             position,
             title: point.label,
-            icon: pinIcon(point.kind === 'client' ? COLORS.client : COLORS.site),
+            icon: pinIcon(kind),
         });
         const info = new google.maps.InfoWindow({
-            content: `<strong>${point.label}</strong>${point.address ? `<div>${point.address}</div>` : ''}`,
+            content: tipHtml(point),
+            minWidth: 340,
+            maxWidth: 400,
+            pixelOffset: new google.maps.Size(0, -4),
         });
-        marker.addListener('click', () => info.open({ map, anchor: marker }));
+        info.addListener('domready', () => {
+            document.querySelectorAll('.gm-style-iw, .gm-style-iw-c, .gm-style-iw-d').forEach((el) => {
+                el.style.overflow = 'visible';
+                el.style.maxHeight = 'none';
+            });
+        });
+        marker.addListener('click', () => {
+            openTip?.close();
+            info.open({ map, anchor: marker });
+            openTip = info;
+        });
         bounds.extend(position);
     });
     if (points.length === 1) {

@@ -82,7 +82,7 @@ Empresa SJ (dueña de SJ-SIG)
 
 Listado en tabla (código, sede, ciudad, puestos, unidades) + **Crear instalación**. Admin e interno crean y editan; el supervisor de la entidad consulta (403 en `/instalaciones/nueva`).
 
-**Ficha:** nombre + mapa. **Puestos:** nombre, modalidad (8 / 12 / 24 h) y líneas de cargo + unidades. Cargos (`GuardRole`): vigilante, escolta, supervisor de patrulla, operador de medios tecnológicos. Código de puesto: `{códigoSede}-01`. Dotación vigente en `post_staffings`; `posts.guard_slots` es la suma (tablero / servicios).
+**Ficha:** nombre + mapa. **Puestos:** nombre, modalidad (8 / 12 / 24 h) y líneas de cargo + unidades (trabajadores). Cargos (`GuardRole`): vigilante, escolta, supervisor de patrulla, operador de medios tecnológicos. Código de puesto: `{códigoSede}-01`. Unidades vigentes en `post_staffings`; `posts.guard_slots` es la suma (tablero / servicios). “Dotación” se reserva para almacén (prendas/elementos).
 
 **Alta:** textarea “Cómo inicia el servicio” + vigente desde / solicitado por. Queda un asiento `inicio` en `site_service_events`.
 
@@ -94,7 +94,7 @@ Listado en tabla (código, sede, ciudad, puestos, unidades) + **Crear instalaci�
 | Puesto | Nombre del puesto, modalidad, alta de puesto | Indique el motivo del cambio en puesto |
 | Personal | Cargo y cantidad de unidades del puesto | Indique el motivo del cambio en personal |
 
-Dos o tres a la vez: *Indique el motivo del cambio en puesto y personal* (o *instalación, puesto y personal*). “Personal” aquí es la **dotación del puesto**, no el módulo de empleados.
+Dos o tres a la vez: *Indique el motivo del cambio en puesto y personal* (o *instalación, puesto y personal*). “Personal” aquí es el **cargo y las unidades del puesto**, no el módulo de empleados.
 
 El asiento `cambio` guarda fecha `now()`, el texto del usuario, `from_summary` / `to_summary` (p. ej. *Cambio en personal: 3 vigilantes → 2 vigilantes*) y `snapshot.scopes`. No se pisa el histórico. En edición ya no se piden solicitado por, último turno ni vigente desde. Tests: `SiteStructureTest`.
 
@@ -340,7 +340,7 @@ Si el tipo o el nombre coincide con un documento de Historia Laboral, Contrataci
 | 7 | Activos electrónicos + mantenimientos | Alta de mantenimiento; evidencias PDF por activo pendientes de pulir |
 | 8 | Servicios por puesto | Consulta por puesto y periodo |
 | 9 | Novedades de ejecución | Alta + listado |
-| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero: mapa satélite (toggle Calle) + KPIs + anillo de salud afiliatoria. Pins navy/cian. Exportación PDF/Excel pendiente |
+| 10 | Dashboard y reportes (semana, mes, vigencia) | Tablero: mapa satélite (toggle Calle) + KPIs + anillo de salud afiliatoria. Pines PNG (cliente / instalación) y burbuja compacta (conteos). Exportación PDF/Excel pendiente |
 | 11 | Aislamiento A vs B + roles | Cubierto en PHPUnit (`TestingSeeder`). Producción: solo admin; el resto se crea en Clientes/Usuarios |
 
 ### Rutas de evidencia (v1)
@@ -361,7 +361,8 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 - Layout: mapa a la izquierda (satélite/híbrido por defecto; interruptor Satélite / Calle, no el control nativo de Google). Columna derecha: personal activo, puestos sin servicio del mes, parafiscales, anillo de salud afiliatoria.  
 - Semáforo documental (Historia Laboral, Contratación, Certificados, Cursos y capacitación, Afiliaciones y Otros indexadas, parafiscal del mes).  
-- Mapa del contrato: pin navy = sede del cliente; pin cian = instalaciones con coordenadas.  
+- Mapa del contrato: pin PNG de edificio (`public/img/pin-cliente.png`) = sede del cliente; pin PNG de instalación (`public/img/pin-instalacion.png`) = sedes con coordenadas. La leyenda usa las mismas imágenes.  
+- Al pulsar un pin se abre **una sola** burbuja (`InfoWindow` en `maps.js`): kicker Cliente / Instalación, nombre, dirección y conteos. Cliente: nombre comercial (`Tenant::displayName()`) + *N instalaciones*. Instalación: *N puestos · N unidades* (`Site::unitsCount()`). No se listan personas asignadas (esa asignación está pendiente). La burbuja es ancha (~340 px) con aire a la X para que el texto no se recorte.  
 - Abajo: servicios por puesto, documentos por vencer (30 días), mantenimientos, novedades abiertas.  
 - Exportación PDF/Excel para acta de supervisión: pendiente.
 
@@ -371,7 +372,7 @@ Carga de PDF y cursos: `admin_empresa` e `interno` (`canUploadEvidence`). Entida
 
 Entorno: Laragon, PHP 8.3, Laravel 13, Vite 8, Tailwind 4.
 
-Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Dotación: `post_staffings` (`GuardRole`) + bitácora `site_service_events` (el servicio clasifica el cambio en instalación / puesto / personal). Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Importación Excel: botón en el listado → modal dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta y edición: `CreatePersonService` + `people._form` (todos los campos de la plantilla). Listado: `PeopleDirectoryTest`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
+Capas: `Controllers` → `Services` → `Repositories` → `Models`. Scope de contrato en middleware `contract.bound` (si el `current_contract_id` de sesión ya no existe, cae al primer contrato accesible). Clientes: `CreateClientService` (transacción; al crear se guarda el contrato activo). Usuarios: `PersistPlatformUserService`. Estructura: `PersistSiteService` + `SiteCodeGenerator` (prefijo del cliente + correlativo), `PersistPostService`. Unidades: `post_staffings` (`GuardRole`) + bitácora `site_service_events` (el servicio clasifica el cambio en instalación / puesto / personal; etiqueta de UI *Cambio de unidades*). Ubicación: Places Autocomplete + Maps JS (`resources/js/maps.js`, clave `GOOGLE_MAPS_API_KEY`; el texto de dirección no mueve el pin). Pines versionados en `public/img/pin-cliente.png` y `pin-instalacion.png` (42×51, ancla abajo); formularios con `data-location-kind` (`client` / `site`) en `location-fields`. Tablero: `BuildContractDashboardService` arma `mapPoints` con `sites_count` / `posts_count` / `units_count`. Importación Excel: botón en el listado → modal dropzone → `preview` → `PersonnelImportDraftStore` → `commit` (`ImportPersonnelWorkbookService`). Alta y edición: `CreatePersonService` + `people._form` (todos los campos de la plantilla). Listado: `PeopleDirectoryTest`. Expediente: `StorePersonDocumentService`, `StoreParafiscalService`. Un lote PDF (`/lote`; `document_batches.folder` nullable) se parte por cortes con carpeta + tipo: `StoreLaborHistoryBatchService`, `IndexLaborHistoryPdfService`, `MarkLaborHistoryNotApplicableService` (FPDI; cursos: `taken_on` + `provider`; Otros: tipo libre, tope 20, `OtherSupportNamer`). Miniaturas del lote: PDF.js. Visor: `StoredFileResponder`. Storage: `storage/app/tenants/...` y `storage/app/avatars/` (no se versionan). Módulos vacíos: `x-empty-panel` o tarjeta con el alta (instalaciones, personal).
 
 UI: layout compacto gerencial (rail fijo al viewport, scroll interno del menú, flecha para plegar; `localStorage sj-rail`). Paleta del logo SJ Seguridad Privada Ltda.: navy `#0b3d91`, azure `#1c7ae6`, cian `#58c4ff`, papel plata `#e8eef6`, tinta `#0b1220`. No se usa beige/oro.
 
@@ -456,3 +457,4 @@ El admin no tiene `tenant_id` (ve todos los clientes). El resto se crea en **Cli
 | 2026-09-09 | Motivo de edición: el sistema detecta si cambió instalación, puesto o personal y pide el motivo nombrando esa parte. Fecha del asiento = ahora. |
 | 2026-09-09 | Personal: tabla a todo el ancho (scroll, conteo, 10/25/50/100). Carga masiva en modal. Ficha y formulario (crear/editar) con todos los campos del Excel. |
 | 2026-09-09 | Clientes: tabla operativa (ciudad, estructura, instalaciones, personal, usuarios, teléfono). Entrar al contrato. Editar con Volver. |
+| 2026-09-09 | Mapa: pines PNG (cliente/instalación) y burbuja con conteos, sin recortar el texto. UI: *unidades* (cupo); *dotación* queda para almacén. |

@@ -11,7 +11,7 @@ enum SiteServiceEventKind: string
     {
         return match ($this) {
             self::Inicio => 'Inicio de servicio',
-            self::Cambio => 'Cambio de dotación',
+            self::Cambio => 'Cambio de unidades',
         };
     }
 }

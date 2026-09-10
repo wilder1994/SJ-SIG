@@ -17,8 +17,8 @@
             </div>
             <div class="dash-map-tools">
                 <p class="muted" style="margin:0">
-                    <span class="map-legend"><span class="map-dot client"></span> Cliente</span>
-                    <span class="map-legend"><span class="map-dot site"></span> Instalaciones</span>
+                    <span class="map-legend"><img class="map-pin" src="{{ asset('img/pin-cliente.png') }}" alt=""> Cliente</span>
+                    <span class="map-legend"><img class="map-pin" src="{{ asset('img/pin-instalacion.png') }}" alt=""> Instalaciones</span>
                 </p>
                 <div class="map-type" role="group" aria-label="Tipo de mapa">
                     <button class="is-on" type="button" data-map-type-btn="hybrid">Satélite</button>

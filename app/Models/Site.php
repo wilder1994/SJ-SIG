@@ -53,6 +53,22 @@ class Site extends Model
         return $this->hasMany(SiteServiceEvent::class)->orderByDesc('effective_on')->orderByDesc('id');
     }
 
+    public function unitsCount(): int
+    {
+        $total = 0;
+        foreach ($this->posts as $post) {
+            if ($post->relationLoaded('staffings') && $post->staffings->isNotEmpty()) {
+                $total += (int) $post->staffings->sum('slots');
+
+                continue;
+            }
+
+            $total += (int) $post->guard_slots;
+        }
+
+        return $total;
+    }
+
     public function unitsLabel(): string
     {
         $totals = [];

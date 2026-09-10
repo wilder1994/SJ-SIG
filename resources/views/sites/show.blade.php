@@ -11,7 +11,7 @@
             @if($site->address)
                 <p class="muted">{{ $site->address }}</p>
             @endif
-            <p class="muted">Dotación vigente: {{ $site->unitsLabel() }}</p>
+            <p class="muted">Unidades: {{ $site->unitsLabel() }}</p>
         </div>
         <div style="display:flex;gap:8px">
             <a class="btn ghost" href="{{ route('sites.index') }}">Volver</a>
@@ -28,6 +28,8 @@
                 'address' => $site->address,
                 'lat' => $site->lat,
                 'lng' => $site->lng,
+                'posts_count' => $site->posts->count(),
+                'units_count' => $site->unitsCount(),
             ]];
         @endphp
         <div
@@ -70,7 +72,7 @@
                 <p class="muted">Solicitado por {{ $event->requested_by }}</p>
             @endif
             @if($event->last_shift_on)
-                <p class="muted">Último turno de la dotación anterior: {{ $event->last_shift_on->format('d/m/Y') }}</p>
+                <p class="muted">Último turno de las unidades anteriores: {{ $event->last_shift_on->format('d/m/Y') }}</p>
             @endif
             @if($event->reason)
                 <p>{{ $event->reason }}</p>

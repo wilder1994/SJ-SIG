@@ -29,10 +29,11 @@
     'lat' => $site?->lat,
     'lng' => $site?->lng,
     'place_id' => $site?->place_id,
+    'pinKind' => 'site',
 ])
 
 <div class="span-2" data-posts>
-    <p class="kicker">Puestos y dotación</p>
+    <p class="kicker">Puestos y unidades</p>
     <p class="muted">Cada puesto tiene modalidad y unidades por cargo. No es quién está asignado; es el cupo contratado.</p>
     <div data-post-list>
         @foreach($posts as $index => $post)

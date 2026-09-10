@@ -5,9 +5,10 @@
     $lat = old('lat', $lat ?? '');
     $lng = old('lng', $lng ?? '');
     $placeId = old('place_id', $placeId ?? '');
+    $pinKind = $pinKind ?? 'client';
 @endphp
 
-<div class="span-2 location-block" data-location-map>
+<div class="span-2 location-block" data-location-map data-location-kind="{{ $pinKind }}">
     <label class="field">Dirección
         <span class="location-address">
             <input type="text" name="address" data-location-address value="{{ $address }}" placeholder="Calle, barrio…" autocomplete="off">
